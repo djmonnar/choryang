@@ -1,14 +1,37 @@
 import { ArrowDown, CalendarCheck, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 
+const heroSlides = [
+  {
+    image: "/images/choryang/hero-stream.jpg",
+    position: "center center",
+  },
+  {
+    image: "/images/choryang/village-view-01.jpg",
+    position: "center center",
+  },
+  {
+    image: "/images/choryang/education-center-01.jpg",
+    position: "center center",
+  },
+];
+
 export function Hero() {
   return (
     <section className="relative min-h-[92vh] overflow-hidden bg-[#14341f] text-white">
-      <div
-        className="hero-kenburns absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/choryang/hero-stream.jpg')" }}
-        aria-hidden
-      />
+      <div className="absolute inset-0" aria-hidden>
+        {heroSlides.map((slide, index) => (
+          <div
+            className="hero-slide absolute inset-0 bg-cover"
+            key={slide.image}
+            style={{
+              animationDelay: `${index * 6}s`,
+              backgroundImage: `url('${slide.image}')`,
+              backgroundPosition: slide.position,
+            }}
+          />
+        ))}
+      </div>
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" aria-hidden />
       <div className="relative z-10 flex min-h-[92vh] items-center">
         <div className="section-shell pt-12">
@@ -29,6 +52,11 @@ export function Hero() {
       </div>
       <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full bg-white/14 px-4 py-2 text-sm backdrop-blur md:flex">
         <ArrowDown className="h-4 w-4" /> 아래로 스크롤
+      </div>
+      <div className="absolute bottom-9 right-8 z-10 hidden gap-2 md:flex" aria-hidden>
+        {heroSlides.map((slide, index) => (
+          <span className="hero-dot h-1.5 w-10 rounded-full bg-white/35" key={slide.image} style={{ animationDelay: `${index * 6}s` }} />
+        ))}
       </div>
     </section>
   );

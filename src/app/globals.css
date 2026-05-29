@@ -46,6 +46,15 @@ textarea {
   .hero-kenburns {
     animation: hero-zoom-out 14s ease-out forwards;
   }
+
+  .hero-slide {
+    animation: hero-slide-zoom 18s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .hero-dot {
+    animation: hero-dot-active 18s ease-in-out infinite;
+  }
 }
 
 @keyframes hero-zoom-out {
@@ -54,6 +63,50 @@ textarea {
   }
   to {
     transform: scale(1);
+  }
+}
+
+@keyframes hero-slide-zoom {
+  0% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  4% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  38% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes hero-dot-active {
+  0%,
+  38%,
+  100% {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+  4%,
+  30% {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    opacity: 0;
+  }
+
+  .hero-slide:first-child {
+    opacity: 1;
   }
 }
 
