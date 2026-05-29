@@ -41,7 +41,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell py-16" id="experiences">
+      <section className="section-shell py-12 sm:py-16" id="experiences">
         <SectionHeader
           eyebrow="Experience"
           title="대표 체험 4가지"
@@ -54,7 +54,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#eef7f5] py-16">
+      <section className="bg-[#eef7f5] py-12 sm:py-16">
         <div className="section-shell grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <SectionHeader
             align="left"
@@ -78,7 +78,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell py-16">
+      <section className="section-shell py-12 sm:py-16">
         <SectionHeader eyebrow="Booking" title="예약은 이렇게 진행됩니다" description="예약은 즉시 확정이 아니라, 마을 운영 가능 여부를 확인한 뒤 최종 확정됩니다." />
         <div className="mt-10 grid gap-4 md:grid-cols-5">
           {steps.map((step, index) => {
@@ -95,7 +95,7 @@ export default function Home() {
         <p className="mt-5 text-center text-sm text-[#6d6351]">현재 결제 방식: 계좌입금 / 추후 PG 온라인결제 연동 예정</p>
       </section>
 
-      <section className="border-y border-[#e7decb] bg-white py-16">
+      <section className="border-y border-[#e7decb] bg-white py-12 sm:py-16">
         <div className="section-shell grid gap-6 lg:grid-cols-2">
           <article className="overflow-hidden rounded-lg border border-[#e4d9c5] shadow-sm">
             <img src={withBasePath("/images/choryang/stay-01.jpg")} alt="초량마을 숙박 안내" className="h-56 w-full object-cover" />
@@ -120,8 +120,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell py-16">
-        <SectionHeader eyebrow="Village" title="마을 사진 갤러리" description="실제 사진으로 교체하기 쉽도록 public/images 경로를 기준으로 구성했습니다." />
+      <section className="section-shell py-12 sm:py-16">
+        <SectionHeader eyebrow="Village" title="마을 사진 갤러리" description="초량마을의 물길과 마을 풍경을 사진으로 둘러보세요." />
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[
             "/images/choryang/village-view-01.jpg",
@@ -133,7 +133,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#f8f1e3] py-16">
+      <section className="bg-[#f8f1e3] py-12 sm:py-16">
         <div className="section-shell grid gap-6 md:grid-cols-3">
           <div className="md:col-span-1">
             <SectionHeader align="left" eyebrow="Nearby" title="주변 여행지와 함께" description="사천과 곤명면 여행길에 하루 체험 코스로 들르기 좋습니다." />
@@ -147,14 +147,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell py-16" id="contact">
+      <section className="section-shell py-12 sm:py-16" id="contact">
         <div className="grid overflow-hidden rounded-lg border border-[#e4d9c5] bg-white shadow-sm lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="p-8">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#1e7894]">Contact</p>
-            <h2 className="mt-3 text-3xl font-bold">문의 및 예약 상담</h2>
+          <div className="p-6 sm:p-8">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#1e7894] sm:text-sm sm:tracking-[0.2em]">Contact</p>
+            <h2 className="mt-3 text-2xl font-bold leading-snug sm:text-3xl">문의 및 예약 상담</h2>
             <div className="mt-6 space-y-3 text-[#4c584f]">
-              <p className="flex items-center gap-3"><Phone className="h-5 w-5 text-[#24573a]" /> {siteSettings.managerName} {managerPhone}</p>
-              <p className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#24573a]" /> {siteSettings.address}</p>
+              <p className="flex items-start gap-3"><Phone className="mt-0.5 h-5 w-5 shrink-0 text-[#24573a]" /> <span>{siteSettings.managerName} {managerPhone}</span></p>
+              <p className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#24573a]" /> <span>{siteSettings.address}</span></p>
             </div>
             <Link href="/reservation" className="mt-8 inline-flex items-center gap-2 rounded-md bg-[#24573a] px-5 py-3 font-semibold text-white shadow-sm">
               <CalendarCheck className="h-5 w-5" /> 예약 신청하기

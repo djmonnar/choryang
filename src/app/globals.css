@@ -42,6 +42,11 @@ textarea {
   font: inherit;
 }
 
+:where(h1, h2, h3, p, a, button, li, span) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .hero-kenburns {
     animation: hero-zoom-out 14s ease-out forwards;

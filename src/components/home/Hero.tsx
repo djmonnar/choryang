@@ -19,7 +19,7 @@ const heroSlides = [
 
 export function Hero() {
   return (
-    <section className="relative min-h-[92vh] overflow-hidden bg-[#14341f] text-white">
+    <section className="relative min-h-[calc(100svh-72px)] overflow-hidden bg-[#14341f] text-white sm:min-h-[92vh]">
       <div className="absolute inset-0" aria-hidden>
         {heroSlides.map((slide, index) => (
           <div
@@ -34,18 +34,21 @@ export function Hero() {
         ))}
       </div>
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" aria-hidden />
-      <div className="relative z-10 flex min-h-[92vh] items-center">
+      <div className="relative z-10 flex min-h-[calc(100svh-72px)] items-center sm:min-h-[92vh]">
         <div className="section-shell pt-12">
-          <p className="text-sm font-bold uppercase tracking-[0.24em] text-white/80">사천 농촌체험휴양마을</p>
-          <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-6xl">사천 초량강에서 만나는 자연 체험 하루</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-white/86 md:text-xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/80 sm:text-sm sm:tracking-[0.24em]">사천 농촌체험휴양마을</p>
+          <h1 className="mt-5 max-w-[21rem] text-[2.08rem] font-black leading-[1.22] sm:max-w-3xl sm:text-4xl md:text-6xl">
+            <span className="block sm:inline">사천 초량강에서</span>{" "}
+            <span className="block sm:inline">만나는 자연 체험 하루</span>
+          </h1>
+          <p className="mt-5 max-w-[21rem] text-base leading-7 text-white/86 sm:max-w-2xl md:text-xl md:leading-8">
             다슬기잡이, 물고기잡이, 만들기 체험, 시골밥상까지 함께하는 초량마을
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/reservation" className="inline-flex items-center gap-2 rounded-md bg-[#24573a] px-5 py-3 font-bold text-white shadow-lg">
+            <Link href="/reservation" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#24573a] px-5 py-3 font-bold text-white shadow-lg sm:w-auto">
               <CalendarCheck className="h-5 w-5" /> 체험 예약하기
             </Link>
-            <Link href="#experiences" className="inline-flex items-center gap-2 rounded-md border border-white/60 bg-white/12 px-5 py-3 font-bold text-white backdrop-blur">
+            <Link href="#experiences" className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/60 bg-white/12 px-5 py-3 font-bold text-white backdrop-blur sm:w-auto">
               <ImageIcon className="h-5 w-5" /> 마을 둘러보기
             </Link>
           </div>
