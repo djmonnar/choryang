@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { seedProducts } from "@/data/seedProducts";
 import { formatPrice } from "@/lib/utils/format";
+import { withBasePath } from "@/lib/utils/publicPath";
 import { productCategoryLabels, seasonLabels } from "@/types/product";
 
 export function generateStaticParams() {
@@ -17,7 +18,7 @@ export default async function ExperienceDetailPage({ params }: { params: Promise
   return (
     <main className="section-shell py-12">
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-        <img src={product.imageUrl} alt={product.name} className="h-[420px] w-full rounded-lg object-cover shadow-sm" />
+        <img src={withBasePath(product.imageUrl)} alt={product.name} className="h-[420px] w-full rounded-lg object-cover shadow-sm" />
         <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
           <div className="flex flex-wrap gap-2">
             <span className="rounded bg-[#e8f4ef] px-2 py-1 text-xs font-bold text-[#24573a]">{productCategoryLabels[product.category]}</span>

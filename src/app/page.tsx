@@ -5,6 +5,7 @@ import { Hero } from "@/components/home/Hero";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { seedProducts } from "@/data/seedProducts";
 import { managerPhone, siteSettings } from "@/data/siteSettings";
+import { withBasePath } from "@/lib/utils/publicPath";
 
 const featured = seedProducts.filter((product) => product.bookingEnabled).slice(0, 4);
 
@@ -97,7 +98,7 @@ export default function Home() {
       <section className="border-y border-[#e7decb] bg-white py-16">
         <div className="section-shell grid gap-6 lg:grid-cols-2">
           <article className="overflow-hidden rounded-lg border border-[#e4d9c5] shadow-sm">
-            <img src="/images/choryang/stay-01.jpg" alt="초량마을 숙박 안내" className="h-56 w-full object-cover" />
+            <img src={withBasePath("/images/choryang/stay-01.jpg")} alt="초량마을 숙박 안내" className="h-56 w-full object-cover" />
             <div className="p-6">
               <p className="text-xl font-bold">숙박 안내</p>
               <p className="mt-2 text-sm leading-6 text-[#596258]">숙박은 별도 예약 기능 없이 문의 중심으로 안내드립니다.</p>
@@ -107,7 +108,7 @@ export default function Home() {
             </div>
           </article>
           <article className="overflow-hidden rounded-lg border border-[#e4d9c5] shadow-sm">
-            <img src="/images/choryang/food-table-01.jpg" alt="초량마을 시골밥상" className="h-56 w-full object-cover" />
+            <img src={withBasePath("/images/choryang/food-table-01.jpg")} alt="초량마을 시골밥상" className="h-56 w-full object-cover" />
             <div className="p-6">
               <p className="text-xl font-bold">식사 안내</p>
               <p className="mt-2 text-sm leading-6 text-[#596258]">자연밥상, 다슬기탕, 도토리묵밥 등은 문의 후 안내드립니다.</p>
@@ -127,7 +128,7 @@ export default function Home() {
             "/images/choryang/village-entrance-01.jpg",
             "/images/choryang/education-center-01.jpg",
           ].map((src) => (
-            <img key={src} src={src} alt="다슬기초량마을 갤러리" className="h-64 w-full rounded-lg object-cover shadow-sm" />
+            <img key={src} src={withBasePath(src)} alt="다슬기초량마을 갤러리" className="h-64 w-full rounded-lg object-cover shadow-sm" />
           ))}
         </div>
       </section>

@@ -1,6 +1,7 @@
 import { CalendarCheck, Info } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils/format";
+import { withBasePath } from "@/lib/utils/publicPath";
 import type { Product } from "@/types/product";
 import { productCategoryLabels, seasonLabels } from "@/types/product";
 
@@ -8,7 +9,7 @@ export function ExperienceCard({ product, compact = false }: { product: Product;
   const status = product.bookingEnabled ? (product.priceType === "inquiry" ? "문의필요" : "예약가능") : "안내전용";
   return (
     <article className="overflow-hidden rounded-lg border border-[#e6dcc9] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <img src={product.imageUrl} alt={product.name} className={compact ? "h-36 w-full object-cover" : "h-52 w-full object-cover"} />
+      <img src={withBasePath(product.imageUrl)} alt={product.name} className={compact ? "h-36 w-full object-cover" : "h-52 w-full object-cover"} />
       <div className="p-5">
         <div className="flex flex-wrap gap-2">
           <span className="rounded bg-[#e8f4ef] px-2 py-1 text-xs font-bold text-[#24573a]">{productCategoryLabels[product.category]}</span>

@@ -1,4 +1,5 @@
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { withBasePath } from "@/lib/utils/publicPath";
 
 export default function AboutPage() {
   return (
@@ -11,7 +12,7 @@ export default function AboutPage() {
             title="초량강 곁에서 자연을 배우는 다슬기초량마을"
             description="경남 사천시 곤명면 초량길 27-3에 자리한 다슬기초량마을은 초량강과 곤양천의 물길, 다슬기와 민물고기, 농촌의 계절을 가까이 만나는 체험마을입니다."
           />
-          <img src="/images/choryang/village-view-01.jpg" alt="다슬기초량마을 전경" className="h-80 w-full rounded-lg object-cover shadow-sm" />
+          <img src={withBasePath("/images/choryang/village-view-01.jpg")} alt="다슬기초량마을 전경" className="h-80 w-full rounded-lg object-cover shadow-sm" />
         </div>
       </section>
       <section className="section-shell grid gap-5 py-14 md:grid-cols-3">

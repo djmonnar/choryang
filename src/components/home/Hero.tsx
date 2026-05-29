@@ -1,5 +1,6 @@
 import { ArrowDown, CalendarCheck, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
+import { withBasePath } from "@/lib/utils/publicPath";
 
 const heroSlides = [
   {
@@ -26,7 +27,7 @@ export function Hero() {
             key={slide.image}
             style={{
               animationDelay: `${index * 6}s`,
-              backgroundImage: `url('${slide.image}')`,
+              backgroundImage: `url('${withBasePath(slide.image)}')`,
               backgroundPosition: slide.position,
             }}
           />

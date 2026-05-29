@@ -39,7 +39,7 @@ export default function AdminReservationsPage() {
               <tbody>
                 {filtered.map((item) => (
                   <tr key={item.id} className="border-t border-[#eee4d4]">
-                    <td className="p-3 font-bold">{item.reservationNumber}</td><td className="p-3">{item.customerName}</td><td className="p-3">{item.phone}</td><td className="p-3">{item.productName}</td><td className="p-3">{item.date} {item.startTime}</td><td className="p-3">{item.totalPeople}</td><td className="p-3">{paymentMethodLabels[item.paymentMethod]}</td><td className="p-3"><StatusBadge status={item.status} /></td><td className="p-3"><Link href={`/admin/reservations/${item.id}`} className="font-bold text-[#24573a]">보기</Link></td>
+                    <td className="p-3 font-bold">{item.reservationNumber}</td><td className="p-3">{item.customerName}</td><td className="p-3">{item.phone}</td><td className="p-3">{item.productName}</td><td className="p-3">{item.date} {item.startTime}</td><td className="p-3">{item.totalPeople}</td><td className="p-3">{paymentMethodLabels[item.paymentMethod]}</td><td className="p-3"><StatusBadge status={item.status} /></td><td className="p-3"><Link href={`/admin/reservations/detail?id=${item.id}`} className="font-bold text-[#24573a]">보기</Link></td>
                   </tr>
                 ))}
                 {filtered.length === 0 ? <tr><td className="p-4 text-[#687166]" colSpan={9}>예약 내역이 없습니다.</td></tr> : null}
