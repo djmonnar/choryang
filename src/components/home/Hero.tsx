@@ -6,7 +6,7 @@ export function Hero() {
     <section className="relative min-h-[92vh] overflow-hidden bg-[#14341f] text-white">
       <div
         className="hero-kenburns absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/hero-village.jpg')" }}
+        style={{ backgroundImage: "url('/images/choryang/hero-stream.jpg')" }}
         aria-hidden
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" aria-hidden />

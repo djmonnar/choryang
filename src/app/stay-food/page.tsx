@@ -14,8 +14,8 @@ export default function StayFoodPage() {
       />
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         {[
-          ["/images/stay-room.jpg", "숙박 안내", "제비콩방, 조롱박방, 작두콩방 등 숙박은 운영 가능 여부와 인원 확인 후 안내드립니다."],
-          ["/images/food-table.jpg", "식사 안내", "자연밥상, 다슬기탕, 도토리묵밥, 조식은 체험 일정과 단체 인원에 따라 문의 후 안내드립니다."],
+          ["/images/choryang/stay-01.jpg", "숙박 안내", "제비콩방, 조롱박방, 작두콩방 등 숙박은 운영 가능 여부와 인원 확인 후 안내드립니다."],
+          ["/images/choryang/food-table-01.jpg", "식사 안내", "자연밥상, 다슬기탕, 도토리묵밥, 조식은 체험 일정과 단체 인원에 따라 문의 후 안내드립니다."],
         ].map(([src, title, text]) => (
           <article key={title} className="overflow-hidden rounded-lg border border-[#e4d9c5] bg-white shadow-sm">
             <img src={src} alt={title} className="h-64 w-full object-cover" />

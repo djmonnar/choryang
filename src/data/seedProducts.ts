@@ -3,13 +3,50 @@ import type { Product, ProductCategory, Season } from "@/types/product";
 const now = "2026-05-29T00:00:00.000Z";
 
 const imageByCategory: Record<ProductCategory, string> = {
-  water_ecology: "/images/experience-daseulgi.jpg",
-  making: "/images/food-table.jpg",
-  farming: "/images/hero-village.jpg",
-  healing: "/images/stay-room.jpg",
-  food_info: "/images/food-table.jpg",
-  stay_info: "/images/stay-room.jpg",
-  product_sale: "/images/food-table.jpg",
+  water_ecology: "/images/choryang/stream-experience-01.jpg",
+  making: "/images/choryang/food-service-01.jpg",
+  farming: "/images/choryang/village-view-01.jpg",
+  healing: "/images/choryang/education-center-01.jpg",
+  food_info: "/images/choryang/food-table-01.jpg",
+  stay_info: "/images/choryang/stay-01.jpg",
+  product_sale: "/images/choryang/food-acorn-jelly-01.jpg",
+};
+
+const productImageById: Record<string, string> = {
+  "daseulgi-fish": "/images/choryang/stream-experience-01.jpg",
+  daseulgi: "/images/choryang/stream-experience-01.jpg",
+  "water-play": "/images/choryang/hero-stream.jpg",
+  raft: "/images/choryang/hero-stream.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  hangwa: "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "steamed-bread": "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "choco-muffin": "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "chocolat-cake": "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  sandwich: "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "mugwort-rice-cake": "/images/choryang/food-ssam-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "acorn-rice-cake": "/images/choryang/food-acorn-jelly-01.jpg",
+  "acorn-jelly": "/images/choryang/food-acorn-jelly-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "blueberry-jam": "/images/choryang/food-service-01.jpg",
+  // TODO: 정확한 상품 사진 확보 시 교체
+  "doraji-jeonggwa": "/images/choryang/food-service-01.jpg",
+  kkakdugi: "/images/choryang/food-kimchi-01.jpg",
+  gochujang: "/images/choryang/food-red-side-01.jpg",
+  "nature-table": "/images/choryang/food-table-01.jpg",
+  "daseulgi-soup": "/images/choryang/food-single-01.jpg",
+  "acorn-noodle": "/images/choryang/food-acorn-jelly-01.jpg",
+  breakfast: "/images/choryang/food-table-01.jpg",
+  "bean-room": "/images/choryang/stay-01.jpg",
+  "gourd-room": "/images/choryang/stay-01.jpg",
+  "sword-bean-room": "/images/choryang/stay-01.jpg",
+  "jagal-hangwa": "/images/choryang/food-acorn-jelly-01.jpg",
+  "doraji-sale": "/images/choryang/food-service-01.jpg",
 };
 
 type SeedInput = Partial<Product> & {
@@ -29,7 +66,7 @@ function createProduct(input: SeedInput, sortOrder: number): Product {
     visible: true,
     description: `${input.name} 프로그램입니다. 자세한 운영 가능 여부와 인원은 문의 후 안내드립니다.`,
     caution: "체험은 계절 및 마을 사정에 따라 변동될 수 있습니다.",
-    imageUrl: imageByCategory[input.category],
+    imageUrl: productImageById[input.id] ?? imageByCategory[input.category],
     tags: [],
     createdAt: now,
     updatedAt: now,
