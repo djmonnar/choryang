@@ -1,19 +1,22 @@
-import { MapPin, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
+import { NaverMap } from "@/components/common/NaverMap";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { siteSettings } from "@/data/siteSettings";
+
+const villageLocation = { lat: 35.1060526, lng: 127.9235548 };
 
 export default function LocationPage() {
   return (
     <main className="section-shell py-14">
       <SectionHeader align="left" eyebrow="Location" title="오시는 길" description={siteSettings.address} />
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="flex min-h-96 items-center justify-center rounded-lg border border-dashed border-[#8db9ad] bg-[#dcebe7] text-center">
-          <div>
-            <MapPin className="mx-auto h-12 w-12 text-[#1e7894]" />
-            <p className="mt-3 text-xl font-bold">지도 영역 placeholder</p>
-            <p className="mt-2 text-sm text-[#5f6a63]">Naver/Kakao 지도 API 또는 iframe으로 교체하세요.</p>
-          </div>
-        </div>
+        <NaverMap
+          lat={villageLocation.lat}
+          lng={villageLocation.lng}
+          title="다슬기초량마을"
+          address={siteSettings.address}
+          className="min-h-96 border border-[#c8ddd6] bg-[#dcebe7]"
+        />
         <aside className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold">방문 안내</h2>
           <p className="mt-4 leading-7 text-[#5d665e]">주소: {siteSettings.address}</p>

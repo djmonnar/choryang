@@ -2,12 +2,14 @@ import { ArrowRight, CalendarCheck, CheckCircle2, ClipboardList, CreditCard, Map
 import Link from "next/link";
 import { ExperienceCard } from "@/components/experience/ExperienceCard";
 import { Hero } from "@/components/home/Hero";
+import { NaverMap } from "@/components/common/NaverMap";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { seedProducts } from "@/data/seedProducts";
 import { managerPhone, siteSettings } from "@/data/siteSettings";
 import { withBasePath } from "@/lib/utils/publicPath";
 
 const featured = seedProducts.filter((product) => product.bookingEnabled).slice(0, 4);
+const villageLocation = { lat: 35.1060526, lng: 127.9235548 };
 
 const steps = [
   { title: "예약 신청", icon: ClipboardList },
@@ -160,14 +162,14 @@ export default function Home() {
               <CalendarCheck className="h-5 w-5" /> 예약 신청하기
             </Link>
           </div>
-          <div className="min-h-72 bg-[#dcebe7] p-6">
-            <div className="flex h-full min-h-64 items-center justify-center rounded-lg border border-dashed border-[#8db9ad] bg-white/70 text-center">
-              <div>
-                <MapPin className="mx-auto h-10 w-10 text-[#1e7894]" />
-                <p className="mt-3 font-bold">지도 영역 placeholder</p>
-                <p className="mt-1 text-sm text-[#5f6a63]">실서비스에서는 Naver/Kakao 지도 API로 교체</p>
-              </div>
-            </div>
+          <div className="min-h-72 bg-[#dcebe7] p-4 sm:p-6">
+            <NaverMap
+              lat={villageLocation.lat}
+              lng={villageLocation.lng}
+              title="다슬기초량마을"
+              address={siteSettings.address}
+              className="h-full min-h-64 border border-[#c8ddd6]"
+            />
           </div>
         </div>
       </section>
