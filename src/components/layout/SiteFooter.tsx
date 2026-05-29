@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { siteSettings } from "@/data/siteSettings";
+import { withBasePath } from "@/lib/utils/publicPath";
 
 export function SiteFooter() {
   return (
     <footer className="bg-[#123822] text-white">
       <div className="section-shell grid gap-8 py-10 md:grid-cols-[1fr_2fr_1fr]">
         <div>
-          <p className="text-xl font-black">다슬기초량마을</p>
+          <img
+            src={withBasePath("/images/choryang/choryang-cute-logo-badge.png")}
+            alt="다슬기초량마을 사천 농촌체험휴양마을"
+            className="h-24 w-24 rounded-2xl object-contain shadow-sm"
+          />
+          <p className="mt-4 text-xl font-black">다슬기초량마을</p>
           <p className="mt-3 text-sm leading-6 text-white/75">청정 초량강과 함께하는 사천 농촌체험 휴양마을</p>
         </div>
         <div className="grid gap-3 text-sm text-white/80 sm:grid-cols-3">

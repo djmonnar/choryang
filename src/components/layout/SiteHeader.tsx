@@ -3,6 +3,7 @@
 import { CalendarCheck, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { withBasePath } from "@/lib/utils/publicPath";
 
 const navItems = [
   ["마을소개", "/about"],
@@ -21,9 +22,12 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-[#e7decb] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-18 w-full max-w-7xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3" aria-label="다슬기초량마을 홈" onClick={closeMenu}>
-          <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#24573a] text-white">
-            <span className="text-lg font-black">초</span>
-          </span>
+          <img
+            src={withBasePath("/images/choryang/choryang-cute-icon.png")}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-xl object-contain shadow-sm"
+            aria-hidden
+          />
           <span>
             <span className="block text-lg font-black text-[#183721]">다슬기초량마을</span>
             <span className="hidden text-xs text-[#6b715f] sm:block">사천 농촌체험휴양마을</span>
