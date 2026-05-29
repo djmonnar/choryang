@@ -1,0 +1,58 @@
+import type { Schedule } from "@/types/schedule";
+
+const now = "2026-05-29T00:00:00.000Z";
+
+export const seedSchedules: Schedule[] = [
+  {
+    id: "sch-daseulgi-20260606-am",
+    productId: "daseulgi-fish",
+    date: "2026-06-06",
+    startTime: "10:00",
+    endTime: "12:00",
+    capacity: 30,
+    reservedCount: 0,
+    status: "open",
+    memo: "오전 물가 체험",
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "sch-daseulgi-20260606-pm",
+    productId: "daseulgi-fish",
+    date: "2026-06-06",
+    startTime: "14:00",
+    endTime: "16:00",
+    capacity: 30,
+    reservedCount: 0,
+    status: "open",
+    memo: "오후 물가 체험",
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "sch-hangwa-20260607-am",
+    productId: "hangwa",
+    date: "2026-06-07",
+    startTime: "10:00",
+    endTime: "11:30",
+    capacity: 20,
+    reservedCount: 0,
+    status: "open",
+    memo: "한과 만들기",
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "sch-bread-20260607-pm",
+    productId: "steamed-bread",
+    date: "2026-06-07",
+    startTime: "14:00",
+    endTime: "15:30",
+    capacity: 20,
+    reservedCount: 0,
+    status: "open",
+    memo: "찐빵 만들기",
+    createdAt: now,
+    updatedAt: now,
+  },
+];

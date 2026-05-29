@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fffdf7;
+  --foreground: #1d261f;
+  --leaf: #24573a;
+  --river: #1e7894;
+  --soil: #6c4f35;
+  --ivory: #fff8e8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(30, 120, 148, 0.08), transparent 32rem),
+    linear-gradient(180deg, #fffdf7 0%, #f7f2e7 100%);
+  color: var(--foreground);
+  font-family:
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-kenburns {
+    animation: hero-zoom-out 14s ease-out forwards;
+  }
+}
+
+@keyframes hero-zoom-out {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.section-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+}
+
+.focus-ring:focus-visible {
+  outline-color: #1e7894;
+}
