@@ -11,6 +11,7 @@ export type ReservationStatus =
   | "refunded";
 
 export type PaymentMethod = "bank_transfer" | "online";
+export type ReservationCancelActor = "customer" | "admin";
 
 export interface Reservation {
   id: string;
@@ -33,6 +34,11 @@ export interface Reservation {
   status: ReservationStatus;
   requestMemo?: string;
   adminMemo?: string;
+  cancelReason?: string;
+  cancelledAt?: string | null;
+  cancelledBy?: ReservationCancelActor | null;
+  refundedAt?: string | null;
+  capacityRestored?: boolean;
   privacyAgreed: boolean;
   cautionAgreed: boolean;
   createdAt: string;

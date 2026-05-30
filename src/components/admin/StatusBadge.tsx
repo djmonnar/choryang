@@ -9,7 +9,7 @@ const colors: Record<ReservationStatus, string> = {
   confirmed: "bg-[#24573a] text-white",
   completed: "bg-[#f0f2f0] text-[#3c4439]",
   cancelled: "bg-red-50 text-red-700",
-  refund_requested: "bg-purple-50 text-purple-700",
+  refund_requested: "bg-purple-100 text-purple-800 ring-1 ring-purple-300",
   refunded: "bg-slate-100 text-slate-700",
 };
 

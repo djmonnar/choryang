@@ -118,6 +118,30 @@ export function AdminReservationDetailClient() {
               <p className="font-bold">요청사항</p>
               <p className="mt-2 text-sm leading-6 text-[#5d665e]">{reservation.requestMemo || "없음"}</p>
             </div>
+            <div className={`mt-4 rounded-lg p-4 ${reservation.status === "refund_requested" ? "bg-purple-50 ring-1 ring-purple-200" : "bg-[#f8f1e3]"}`}>
+              <p className="font-bold">취소/환불 정보</p>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-[#6b715f]">취소 사유</dt>
+                  <dd className="font-bold">{reservation.cancelReason || "없음"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">취소/요청자</dt>
+                  <dd className="font-bold">{reservation.cancelledBy === "customer" ? "고객" : reservation.cancelledBy === "admin" ? "관리자" : "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">취소 일시</dt>
+                  <dd className="font-bold">{reservation.cancelledAt || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">정원 복구</dt>
+                  <dd className="font-bold">{reservation.capacityRestored ? "복구됨" : "미복구"}</dd>
+                </div>
+              </dl>
+              {reservation.status === "refund_requested" ? (
+                <p className="mt-3 text-sm font-semibold text-purple-800">환불 요청 상태입니다. 결제/확정된 예약은 관리자 확인 후 환불 처리해 주세요.</p>
+              ) : null}
+            </div>
           </section>
           <aside className="rounded-lg border border-[#e4d9c5] bg-white p-5 shadow-sm">
             <h2 className="font-bold">상태 변경</h2>
@@ -133,9 +157,14 @@ export function AdminReservationDetailClient() {
                   key={status}
                   type="button"
                   onClick={async () => {
+                    if (status === "cancelled" && !window.confirm("예약취소로 변경하시겠습니까? 정원이 복구되지 않은 예약이면 회차 정원이 복구됩니다.")) return;
                     const updated = await updateReservationStatus(reservation.id, status, memo);
                     setReservation(updated);
-                    setMessage(`${reservationStatusLabels[status]} 상태로 변경했습니다.`);
+                    setMessage(
+                      status === "cancelled"
+                        ? `${reservationStatusLabels[status]} 상태로 변경했습니다. 정원 복구 여부: ${updated.capacityRestored ? "복구됨" : "미복구"}`
+                        : `${reservationStatusLabels[status]} 상태로 변경했습니다.`,
+                    );
                   }}
                   className="rounded-md border border-[#d7ccb7] px-3 py-2 text-sm font-bold hover:bg-[#f8f1e3]"
                 >

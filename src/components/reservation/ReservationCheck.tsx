@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
+import { ReservationCancelButton } from "@/components/reservation/ReservationCancelButton";
 import { findReservation } from "@/services/reservations.service";
 import type { Reservation } from "@/types/reservation";
 import { paymentMethodLabels, reservationStatusLabels } from "@/types/reservation";
@@ -46,6 +47,7 @@ export function ReservationCheck() {
               <div><dt className="text-[#6b715f]">인원</dt><dd className="font-bold">{result.totalPeople}명</dd></div>
               <div><dt className="text-[#6b715f]">결제방식</dt><dd className="font-bold">{paymentMethodLabels[result.paymentMethod]}</dd></div>
             </dl>
+            <ReservationCancelButton reservation={result} phone={phone} onCancelled={setResult} />
             <TossPaymentButton reservation={result} phone={phone} />
           </>
         ) : (

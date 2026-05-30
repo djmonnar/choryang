@@ -63,3 +63,21 @@ export async function updateReservationStatus(id: string, status: ReservationSta
   if (!data.reservation) throw new Error("예약 처리 중 오류가 발생했습니다. 관리자에게 문의해 주세요.");
   return data.reservation;
 }
+
+export async function cancelReservation(input: {
+  reservationId?: string;
+  reservationNumber?: string;
+  phone?: string;
+  cancelReason?: string;
+}) {
+  const data = await parseReservationResponse(
+    await fetch("/api/reservations/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(input),
+    }),
+  );
+  if (!data.reservation) throw new Error("예약 취소 요청 중 오류가 발생했습니다. 관리자에게 문의해 주세요.");
+  return data.reservation;
+}
