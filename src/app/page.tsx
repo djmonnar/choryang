@@ -1,14 +1,12 @@
 import { ArrowRight, CalendarCheck, CheckCircle2, ClipboardList, CreditCard, MapPin, Phone, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
-import { ExperienceCard } from "@/components/experience/ExperienceCard";
+import { FeaturedExperiences } from "@/components/home/FeaturedExperiences";
 import { Hero } from "@/components/home/Hero";
 import { NaverMap } from "@/components/common/NaverMap";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { seedProducts } from "@/data/seedProducts";
 import { managerPhone, siteSettings } from "@/data/siteSettings";
 import { withBasePath } from "@/lib/utils/publicPath";
 
-const featured = seedProducts.filter((product) => product.bookingEnabled).slice(0, 4);
 const villageLocation = { lat: 35.1060526, lng: 127.9235548 };
 
 const steps = [
@@ -49,11 +47,7 @@ export default function Home() {
           title="대표 체험 4가지"
           description="초량강 물가 체험부터 손으로 만드는 먹거리 체험까지, 실제 예약 가능한 프로그램을 먼저 확인해보세요."
         />
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((product) => (
-            <ExperienceCard key={product.id} product={product} compact />
-          ))}
-        </div>
+        <FeaturedExperiences />
       </section>
 
       <section className="bg-[#eef7f5] py-12 sm:py-16">

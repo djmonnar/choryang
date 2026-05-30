@@ -3,23 +3,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { seedProducts } from "@/data/seedProducts";
 import { reservationCautions, siteSettings } from "@/data/siteSettings";
-import { seedSchedules } from "@/data/seedSchedules";
 import { calculateAmount, formatCurrency } from "@/lib/utils/format";
+import { listPublicProducts, listPublicSchedules } from "@/services/catalog.service";
 import { createReservation } from "@/services/reservations.service";
+import type { Product } from "@/types/product";
 import type { PaymentMethod } from "@/types/reservation";
+import type { Schedule } from "@/types/schedule";
+import { scheduleStatusLabels } from "@/types/schedule";
 import type { PublicUser } from "@/types/user";
 
 const steps = ["체험 선택", "날짜 선택", "시간 선택", "인원 선택", "예약자 정보", "결제 방식", "신청 완료"];
 
+function remainingSeats(schedule: Schedule) {
+  return Math.max(schedule.capacity - schedule.reservedCount, 0);
+}
+
+function canSelectSchedule(schedule: Schedule) {
+  return schedule.status === "open" && remainingSeats(schedule) > 0;
+}
+
 export function ReservationWizard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialProductId = searchParams.get("productId") ?? seedProducts.find((item) => item.bookingEnabled)?.id ?? "";
+  const requestedProductId = searchParams.get("productId") ?? "";
+
   const [step, setStep] = useState(0);
-  const [productId, setProductId] = useState(initialProductId);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [productId, setProductId] = useState(requestedProductId);
+  const [selectedDate, setSelectedDate] = useState("");
   const [scheduleId, setScheduleId] = useState("");
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [adultCount, setAdultCount] = useState(1);
   const [youthCount, setYouthCount] = useState(0);
   const [childCount, setChildCount] = useState(0);
@@ -33,14 +50,76 @@ export function ReservationWizard() {
   const [error, setError] = useState("");
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
 
-  const product = seedProducts.find((item) => item.id === productId);
-  const schedules = useMemo(() => seedSchedules.filter((schedule) => schedule.productId === productId && schedule.status === "open"), [productId]);
+  const bookableProducts = useMemo(() => products.filter((item) => item.bookingEnabled), [products]);
+  const product = products.find((item) => item.id === productId);
   const schedule = schedules.find((item) => item.id === scheduleId);
-  const dateOptions = [...new Set(schedules.map((item) => item.date))];
-  const selectedDate = schedule?.date ?? dateOptions[0] ?? "";
+  const dateOptions = useMemo(() => [...new Set(schedules.map((item) => item.date))], [schedules]);
   const schedulesForDate = schedules.filter((item) => item.date === selectedDate);
   const totalPeople = adultCount + youthCount + childCount;
   const amount = product ? calculateAmount(product, { adultCount, youthCount, childCount }) : null;
+
+  useEffect(() => {
+    let isMounted = true;
+    setProductsLoading(true);
+    setLoadError("");
+
+    listPublicProducts()
+      .then((data) => {
+        if (!isMounted) return;
+        const bookable = data.filter((item) => item.bookingEnabled);
+        setProducts(data);
+        setProductId((current) => {
+          if (current && bookable.some((item) => item.id === current)) return current;
+          return bookable[0]?.id ?? "";
+        });
+      })
+      .catch((caught) => {
+        if (!isMounted) return;
+        setLoadError(caught instanceof Error ? caught.message : "체험 상품을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (isMounted) setProductsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!productId) {
+      setSchedules([]);
+      setSelectedDate("");
+      setScheduleId("");
+      return;
+    }
+
+    let isMounted = true;
+    setSchedulesLoading(true);
+    setLoadError("");
+    setSelectedDate("");
+    setScheduleId("");
+
+    listPublicSchedules(productId)
+      .then((data) => {
+        if (!isMounted) return;
+        const firstAvailable = data.find(canSelectSchedule);
+        setSchedules(data);
+        setSelectedDate(firstAvailable?.date ?? data[0]?.date ?? "");
+        setScheduleId(firstAvailable?.id ?? "");
+      })
+      .catch((caught) => {
+        if (!isMounted) return;
+        setLoadError(caught instanceof Error ? caught.message : "체험 일정을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (isMounted) setSchedulesLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [productId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,14 +135,31 @@ export function ReservationWizard() {
       .catch(() => {
         if (isMounted) setCurrentUser(null);
       });
+
     return () => {
       isMounted = false;
     };
   }, []);
 
+  function chooseProduct(nextProductId: string) {
+    setProductId(nextProductId);
+    setSelectedDate("");
+    setScheduleId("");
+  }
+
+  function chooseDate(date: string) {
+    const firstAvailable = schedules.find((item) => item.date === date && canSelectSchedule(item));
+    setSelectedDate(date);
+    setScheduleId(firstAvailable?.id ?? "");
+  }
+
   function validateCurrentStep() {
+    if (loadError) return loadError;
+    if (productsLoading || schedulesLoading) return "예약 정보를 불러오는 중입니다. 잠시만 기다려 주세요.";
     if (step === 0 && !productId) return "체험을 선택해 주세요.";
-    if ((step === 1 || step === 2) && !scheduleId) return "날짜와 회차를 선택해 주세요.";
+    if (step === 1 && !selectedDate) return "예약 가능한 날짜를 선택해 주세요.";
+    if (step === 1 && !schedulesForDate.some(canSelectSchedule)) return "선택한 날짜에는 예약 가능한 회차가 없습니다.";
+    if (step === 2 && (!schedule || !canSelectSchedule(schedule))) return "예약 가능한 시간 회차를 선택해 주세요.";
     if (step === 3 && totalPeople <= 0) return "인원은 1명 이상이어야 합니다.";
     if (step === 4) {
       if (!customerName.trim()) return "예약자 이름을 입력해 주세요.";
@@ -86,10 +182,11 @@ export function ReservationWizard() {
 
   async function submit() {
     const message = validateCurrentStep();
-    if (message || !product || !schedule) {
+    if (message || !product || !schedule || !canSelectSchedule(schedule)) {
       setError(message || "예약 정보를 확인해 주세요.");
       return;
     }
+
     try {
       const reservation = await createReservation({
         productId: product.id,
@@ -126,11 +223,24 @@ export function ReservationWizard() {
           ))}
         </ol>
 
+        {loadError ? <p className="mt-5 rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{loadError}</p> : null}
+
         <div className="mt-8 min-h-[360px]">
           {step === 0 ? (
             <div className="grid gap-3 md:grid-cols-2">
-              {seedProducts.filter((item) => item.bookingEnabled).map((item) => (
-                <button key={item.id} type="button" onClick={() => { setProductId(item.id); setScheduleId(""); }} className={`rounded-lg border p-4 text-left ${productId === item.id ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6] bg-white"}`}>
+              {productsLoading ? (
+                <p className="rounded-lg bg-[#f8f1e3] p-4 text-sm font-semibold text-[#5f675a] md:col-span-2">체험 상품을 불러오는 중입니다.</p>
+              ) : null}
+              {!productsLoading && bookableProducts.length === 0 ? (
+                <p className="rounded-lg bg-[#f8f1e3] p-4 text-sm font-semibold text-[#5f675a] md:col-span-2">현재 예약 가능한 체험 상품이 없습니다.</p>
+              ) : null}
+              {bookableProducts.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => chooseProduct(item.id)}
+                  className={`rounded-lg border p-4 text-left ${productId === item.id ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6] bg-white"}`}
+                >
                   <span className="font-bold">{item.name}</span>
                   <span className="mt-2 block text-sm text-[#617064]">{item.description}</span>
                 </button>
@@ -141,13 +251,29 @@ export function ReservationWizard() {
           {step === 1 ? (
             <div>
               <h2 className="text-xl font-bold">날짜 선택</h2>
+              {schedulesLoading ? <p className="mt-4 rounded-lg bg-[#f8f1e3] p-4 text-sm font-semibold text-[#5f675a]">체험 일정을 불러오는 중입니다.</p> : null}
+              {!schedulesLoading && dateOptions.length === 0 ? (
+                <p className="mt-4 rounded-lg bg-[#f8f1e3] p-4 text-sm font-semibold text-[#5f675a]">등록된 예약 가능 일정이 없습니다. 문의해 주세요.</p>
+              ) : null}
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {dateOptions.map((date) => {
-                  const first = schedules.find((item) => item.date === date);
+                  const dateSchedules = schedules.filter((item) => item.date === date);
+                  const availableCount = dateSchedules.filter(canSelectSchedule).length;
+                  const disabled = availableCount === 0;
                   return (
-                    <button key={date} type="button" onClick={() => setScheduleId(first?.id ?? "")} className={`rounded-lg border p-4 text-left ${selectedDate === date ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"}`}>
+                    <button
+                      key={date}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => chooseDate(date)}
+                      className={`rounded-lg border p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 ${
+                        selectedDate === date ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"
+                      }`}
+                    >
                       <span className="font-bold">{date}</span>
-                      <span className="block text-sm text-[#617064]">예약 가능한 회차 {schedules.filter((item) => item.date === date).length}개</span>
+                      <span className="block text-sm text-[#617064]">
+                        예약 가능 회차 {availableCount}개 / 전체 회차 {dateSchedules.length}개
+                      </span>
                     </button>
                   );
                 })}
@@ -159,12 +285,31 @@ export function ReservationWizard() {
             <div>
               <h2 className="text-xl font-bold">시간 회차 선택</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {schedulesForDate.map((item) => (
-                  <button key={item.id} type="button" onClick={() => setScheduleId(item.id)} className={`rounded-lg border p-4 text-left ${scheduleId === item.id ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"}`}>
-                    <span className="font-bold">{item.startTime}~{item.endTime}</span>
-                    <span className="block text-sm text-[#617064]">정원 {item.capacity}명 / 남은 {item.capacity - item.reservedCount}명</span>
-                  </button>
-                ))}
+                {schedulesForDate.map((item) => {
+                  const remaining = remainingSeats(item);
+                  const selectable = canSelectSchedule(item);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={!selectable}
+                      onClick={() => setScheduleId(item.id)}
+                      className={`rounded-lg border p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 ${
+                        scheduleId === item.id ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"
+                      }`}
+                    >
+                      <span className="font-bold">
+                        {item.startTime}~{item.endTime}
+                      </span>
+                      <span className="block text-sm text-[#617064]">
+                        정원 {item.capacity}명 / 예약 {item.reservedCount}명 / 잔여 {remaining}명
+                      </span>
+                      <span className={`mt-2 inline-flex rounded px-2 py-1 text-xs font-bold ${selectable ? "bg-[#e8f4ef] text-[#24573a]" : "bg-[#f4eee0] text-[#6c4f35]"}`}>
+                        {scheduleStatusLabels[item.status]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -179,7 +324,13 @@ export function ReservationWizard() {
               ].map(([label, value, setter]) => (
                 <label key={label as string} className="grid gap-2 rounded-lg border border-[#e2d8c6] p-4 sm:grid-cols-[1fr_180px] sm:items-center">
                   <span className="font-bold">{label as string}</span>
-                  <input type="number" min={0} value={value as number} onChange={(event) => (setter as (value: number) => void)(Number(event.target.value))} className="rounded-md border border-[#d6cab5] px-3 py-2" />
+                  <input
+                    type="number"
+                    min={0}
+                    value={value as number}
+                    onChange={(event) => (setter as (value: number) => void)(Number(event.target.value))}
+                    className="rounded-md border border-[#d6cab5] px-3 py-2"
+                  />
                 </label>
               ))}
             </div>
@@ -213,8 +364,8 @@ export function ReservationWizard() {
               <h2 className="text-xl font-bold">결제 방식 선택</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  ["bank_transfer", "계좌입금", "관리자가 가능 여부 확인 후 입금 계좌를 안내합니다."],
-                  ["online", "온라인결제", "1차 MVP에서는 mock 결제 요청으로 기록됩니다."],
+                  ["bank_transfer", "계좌입금", "관리자가 가능 여부를 확인한 뒤 입금 계좌를 안내합니다."],
+                  ["online", "온라인결제", "1차 MVP에서는 mock 결제 요청으로 기록합니다."],
                 ].map(([value, title, text]) => (
                   <button key={value} type="button" onClick={() => setPaymentMethod(value as PaymentMethod)} className={`rounded-lg border p-5 text-left ${paymentMethod === value ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"}`}>
                     <span className="font-bold">{title}</span>
@@ -252,10 +403,22 @@ export function ReservationWizard() {
       <aside className="rounded-lg border border-[#e4d9c5] bg-white p-5 shadow-sm lg:sticky lg:top-24">
         <h2 className="font-bold">예약 요약</h2>
         <dl className="mt-4 space-y-3 text-sm">
-          <div><dt className="text-[#6b715f]">체험</dt><dd className="font-bold">{product?.name ?? "-"}</dd></div>
-          <div><dt className="text-[#6b715f]">일시</dt><dd className="font-bold">{schedule ? `${schedule.date} ${schedule.startTime}` : "-"}</dd></div>
-          <div><dt className="text-[#6b715f]">인원</dt><dd className="font-bold">{totalPeople}명</dd></div>
-          <div><dt className="text-[#6b715f]">예상금액</dt><dd className="font-bold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</dd></div>
+          <div>
+            <dt className="text-[#6b715f]">체험</dt>
+            <dd className="font-bold">{product?.name ?? "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-[#6b715f]">일시</dt>
+            <dd className="font-bold">{schedule ? `${schedule.date} ${schedule.startTime}` : "-"}</dd>
+          </div>
+          <div>
+            <dt className="text-[#6b715f]">인원</dt>
+            <dd className="font-bold">{totalPeople}명</dd>
+          </div>
+          <div>
+            <dt className="text-[#6b715f]">예상금액</dt>
+            <dd className="font-bold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</dd>
+          </div>
         </dl>
       </aside>
     </div>
