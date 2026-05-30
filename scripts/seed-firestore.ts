@@ -1,9 +1,12 @@
+import dotenv from "dotenv";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { seedNotices } from "../src/data/seedNotices";
 import { seedProducts } from "../src/data/seedProducts";
 import { seedSchedules } from "../src/data/seedSchedules";
 import { siteSettings } from "../src/data/siteSettings";
+
+dotenv.config({ path: ".env.local" });
 
 const requiredEnv = ["FIREBASE_PROJECT_ID", "FIREBASE_CLIENT_EMAIL", "FIREBASE_PRIVATE_KEY"] as const;
 
@@ -13,13 +16,17 @@ function requireEnv(key: (typeof requiredEnv)[number]) {
   return value;
 }
 
+function getPrivateKey() {
+  return requireEnv("FIREBASE_PRIVATE_KEY").replace(/^"|"$/g, "").replace(/\\n/g, "\n");
+}
+
 function initializeAdmin() {
   if (getApps()[0]) return getApps()[0];
   return initializeApp({
     credential: cert({
       projectId: requireEnv("FIREBASE_PROJECT_ID"),
       clientEmail: requireEnv("FIREBASE_CLIENT_EMAIL"),
-      privateKey: requireEnv("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n"),
+      privateKey: getPrivateKey(),
     }),
   });
 }
