@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
 import { findReservation } from "@/services/reservations.service";
 import type { Reservation } from "@/types/reservation";
 import { paymentMethodLabels, reservationStatusLabels } from "@/types/reservation";
@@ -36,14 +37,17 @@ export function ReservationCheck() {
       </form>
       <div className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
         {result ? (
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div><dt className="text-[#6b715f]">예약번호</dt><dd className="font-bold">{result.reservationNumber}</dd></div>
-            <div><dt className="text-[#6b715f]">상태</dt><dd className="font-bold text-[#24573a]">{reservationStatusLabels[result.status]}</dd></div>
-            <div><dt className="text-[#6b715f]">체험</dt><dd className="font-bold">{result.productName}</dd></div>
-            <div><dt className="text-[#6b715f]">일시</dt><dd className="font-bold">{result.date} {result.startTime}</dd></div>
-            <div><dt className="text-[#6b715f]">인원</dt><dd className="font-bold">{result.totalPeople}명</dd></div>
-            <div><dt className="text-[#6b715f]">결제방식</dt><dd className="font-bold">{paymentMethodLabels[result.paymentMethod]}</dd></div>
-          </dl>
+          <>
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <div><dt className="text-[#6b715f]">예약번호</dt><dd className="font-bold">{result.reservationNumber}</dd></div>
+              <div><dt className="text-[#6b715f]">상태</dt><dd className="font-bold text-[#24573a]">{reservationStatusLabels[result.status]}</dd></div>
+              <div><dt className="text-[#6b715f]">체험</dt><dd className="font-bold">{result.productName}</dd></div>
+              <div><dt className="text-[#6b715f]">일시</dt><dd className="font-bold">{result.date} {result.startTime}</dd></div>
+              <div><dt className="text-[#6b715f]">인원</dt><dd className="font-bold">{result.totalPeople}명</dd></div>
+              <div><dt className="text-[#6b715f]">결제방식</dt><dd className="font-bold">{paymentMethodLabels[result.paymentMethod]}</dd></div>
+            </dl>
+            <TossPaymentButton reservation={result} phone={phone} />
+          </>
         ) : (
           <p className="leading-7 text-[#5d665e]">예약 신청 후 발급된 예약번호와 연락처로 접수 상태를 확인할 수 있습니다.</p>
         )}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CalendarCheck, Search } from "lucide-react";
+import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
 import { listMyReservations } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
 import { paymentMethodLabels, reservationStatusLabels, type Reservation } from "@/types/reservation";
@@ -111,6 +112,7 @@ export function MyPageClient() {
               <p className="mt-3 text-sm text-[#5d665e]">
                 {paymentMethodLabels[reservation.paymentMethod]} · {reservation.totalAmount == null ? "문의 후 안내" : formatCurrency(reservation.totalAmount)}
               </p>
+              <TossPaymentButton reservation={reservation} />
             </article>
           ))}
           {reservations.length === 0 ? (

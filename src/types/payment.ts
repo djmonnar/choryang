@@ -4,16 +4,21 @@ export type PaymentProviderName = "mock" | "portone" | "toss" | "bank";
 export interface Payment {
   id: string;
   reservationId: string;
+  reservationNumber?: string;
+  orderId?: string;
+  paymentKey?: string | null;
   method: "bank_transfer" | "online";
   provider: PaymentProviderName;
   amount: number;
   status: PaymentStatus;
   requestedAt: string;
+  approvedAt?: string | null;
   paidAt?: string | null;
   cancelledAt?: string | null;
   transactionId?: string | null;
   virtualAccountInfo?: string | null;
   memo?: string;
+  rawResponse?: unknown;
 }
 
 export interface PaymentRequestInput {
