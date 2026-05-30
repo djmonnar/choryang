@@ -8,6 +8,7 @@ import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
 import { ReservationCancelButton } from "@/components/reservation/ReservationCancelButton";
 import { listMyReservations } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
+import { formatReservationItemTime, getReservationItems, getReservationTitle } from "@/lib/utils/reservationItems";
 import { paymentMethodLabels, reservationStatusLabels, type Reservation } from "@/types/reservation";
 import type { PublicUser } from "@/types/user";
 
@@ -103,12 +104,22 @@ export function MyPageClient() {
             <article key={reservation.id} className="rounded-lg border border-[#e8dfcf] p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-bold text-[#1d261f]">{reservation.productName}</p>
+                  <p className="font-bold text-[#1d261f]">{getReservationTitle(reservation)}</p>
                   <p className="mt-1 text-sm text-[#5d665e]">
-                    {reservation.date} {reservation.startTime} · {reservation.totalPeople}명 · {reservation.reservationNumber}
+                    {reservation.visitDate ?? reservation.date} · {reservation.totalPeople}명 · {reservation.reservationNumber}
                   </p>
                 </div>
                 <span className="rounded bg-[#edf7f1] px-2 py-1 text-xs font-bold text-[#24573a]">{reservationStatusLabels[reservation.status]}</span>
+              </div>
+              <div className="mt-3 grid gap-2">
+                {getReservationItems(reservation).map((item) => (
+                  <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-[#f8f1e3] p-3 text-sm">
+                    <p className="font-bold">{item.productName}</p>
+                    <p className="mt-1 text-[#5d665e]">
+                      {formatReservationItemTime(item)} · {item.totalPeople}명 · {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
+                    </p>
+                  </div>
+                ))}
               </div>
               <p className="mt-3 text-sm text-[#5d665e]">
                 {paymentMethodLabels[reservation.paymentMethod]} · {reservation.totalAmount == null ? "문의 후 안내" : formatCurrency(reservation.totalAmount)}

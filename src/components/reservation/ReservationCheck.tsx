@@ -4,6 +4,8 @@ import { useState } from "react";
 import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
 import { ReservationCancelButton } from "@/components/reservation/ReservationCancelButton";
 import { findReservation } from "@/services/reservations.service";
+import { formatCurrency } from "@/lib/utils/format";
+import { formatReservationItemTime, getReservationItems, getReservationTitle } from "@/lib/utils/reservationItems";
 import type { Reservation } from "@/types/reservation";
 import { paymentMethodLabels, reservationStatusLabels } from "@/types/reservation";
 
@@ -42,11 +44,21 @@ export function ReservationCheck() {
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div><dt className="text-[#6b715f]">예약번호</dt><dd className="font-bold">{result.reservationNumber}</dd></div>
               <div><dt className="text-[#6b715f]">상태</dt><dd className="font-bold text-[#24573a]">{reservationStatusLabels[result.status]}</dd></div>
-              <div><dt className="text-[#6b715f]">체험</dt><dd className="font-bold">{result.productName}</dd></div>
-              <div><dt className="text-[#6b715f]">일시</dt><dd className="font-bold">{result.date} {result.startTime}</dd></div>
+              <div><dt className="text-[#6b715f]">체험</dt><dd className="font-bold">{getReservationTitle(result)}</dd></div>
+              <div><dt className="text-[#6b715f]">방문일</dt><dd className="font-bold">{result.visitDate ?? result.date}</dd></div>
               <div><dt className="text-[#6b715f]">인원</dt><dd className="font-bold">{result.totalPeople}명</dd></div>
               <div><dt className="text-[#6b715f]">결제방식</dt><dd className="font-bold">{paymentMethodLabels[result.paymentMethod]}</dd></div>
             </dl>
+            <div className="mt-5 grid gap-2">
+              {getReservationItems(result).map((item) => (
+                <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-[#f8f1e3] p-3 text-sm">
+                  <p className="font-bold">{item.productName}</p>
+                  <p className="mt-1 text-[#5d665e]">
+                    {formatReservationItemTime(item)} · {item.totalPeople}명 · {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
             <ReservationCancelButton reservation={result} phone={phone} onCancelled={setResult} />
             <TossPaymentButton reservation={result} phone={phone} />
           </>

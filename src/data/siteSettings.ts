@@ -6,9 +6,9 @@ export const siteSettings: SiteSettings = {
   managerName: "김노미 사무장님",
   managerPhone,
   address: "경상남도 사천시 곤명면 초량길 27-3",
-  bankName: "은행명 입력",
-  bankAccount: "계좌번호 입력",
-  bankHolder: "예금주 입력",
+  bankName: "토스뱅크",
+  bankAccount: "100251424276",
+  bankHolder: "서효승",
   reservationGuide:
     "예약 신청이 접수되었습니다. 김노미 사무장님이 가능 여부를 확인한 후 결제 안내를 드립니다. 예약은 입금 또는 온라인결제 확인 후 최종 확정됩니다.",
   refundGuide: "환불 규정은 운영 정책 확정 후 관리자 설정에서 수정해 주세요.",

@@ -5,8 +5,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { seedProducts } from "@/data/seedProducts";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import { calculateAmount, makeReservationNumber } from "@/lib/utils/format";
+import { getReservationItems } from "@/lib/utils/reservationItems";
 import type { Product } from "@/types/product";
-import type { Reservation, ReservationInput, ReservationStatus } from "@/types/reservation";
+import type { Reservation, ReservationInput, ReservationItem, ReservationItemInput, ReservationStatus } from "@/types/reservation";
 import type { Schedule } from "@/types/schedule";
 
 const RESERVATIONS = "reservations";
@@ -23,6 +24,33 @@ function appendAdminMemo(current: string | undefined, line: string) {
   return [current, line].filter(Boolean).join("\n");
 }
 
+function getInputItems(input: ReservationInput): ReservationItemInput[] {
+  if (input.items?.length) return input.items;
+  if (!input.productId || !input.scheduleId) return [];
+
+  return [
+    {
+      productId: input.productId,
+      productName: input.productName,
+      scheduleId: input.scheduleId,
+      date: input.date,
+      startTime: input.startTime,
+      adultCount: input.adultCount ?? 0,
+      youthCount: input.youthCount ?? 0,
+      childCount: input.childCount ?? 0,
+    },
+  ];
+}
+
+function assertNoTimeConflict(items: ReservationItem[]) {
+  const ranges = new Set<string>();
+  for (const item of items) {
+    const key = `${item.date}-${item.startTime}-${item.endTime}`;
+    if (ranges.has(key)) throw new Error("같은 시간대 체험은 중복 선택할 수 없습니다.");
+    ranges.add(key);
+  }
+}
+
 function restoreCapacityUpdate(schedule: Schedule, totalPeople: number) {
   const reservedCount = Math.max((schedule.reservedCount ?? 0) - totalPeople, 0);
   return {
@@ -35,13 +63,18 @@ function restoreCapacityUpdate(schedule: Schedule, totalPeople: number) {
 
 async function restoreCapacityInTransaction(transaction: Transaction, reservation: Reservation) {
   if (reservation.capacityRestored) return false;
-  const scheduleRef = getAdminFirestore().collection(SCHEDULES).doc(reservation.scheduleId);
-  const scheduleSnapshot = await transaction.get(scheduleRef);
-  if (!scheduleSnapshot.exists) return false;
 
-  const schedule = scheduleSnapshot.data() as Schedule;
-  transaction.set(scheduleRef, restoreCapacityUpdate(schedule, reservation.totalPeople), { merge: true });
-  return true;
+  let restored = false;
+  for (const item of getReservationItems(reservation)) {
+    const scheduleRef = getAdminFirestore().collection(SCHEDULES).doc(item.scheduleId);
+    const scheduleSnapshot = await transaction.get(scheduleRef);
+    if (!scheduleSnapshot.exists) continue;
+
+    const schedule = scheduleSnapshot.data() as Schedule;
+    transaction.set(scheduleRef, restoreCapacityUpdate(schedule, item.totalPeople), { merge: true });
+    restored = true;
+  }
+  return restored;
 }
 
 async function getProductForReservation(productId: string): Promise<Product | null> {
@@ -90,37 +123,88 @@ export async function findReservationAdmin(reservationNumber: string, phone: str
 
 export async function createReservationAdmin(input: ReservationInput, userId?: string): Promise<Reservation> {
   const db = getAdminFirestore();
-  const product = await getProductForReservation(input.productId);
-  if (!product) throw new Error("선택한 체험을 찾을 수 없습니다.");
-
-  const totalPeople = input.adultCount + input.youthCount + input.childCount;
-  if (totalPeople <= 0) throw new Error("인원은 1명 이상이어야 합니다.");
+  const inputItems = getInputItems(input);
+  if (inputItems.length === 0) throw new Error("최소 1개 이상의 체험을 선택해 주세요.");
 
   const reservationRef = db.collection(RESERVATIONS).doc();
-  const scheduleRef = db.collection(SCHEDULES).doc(input.scheduleId);
   const now = new Date().toISOString();
 
   return db.runTransaction(async (transaction) => {
-    const scheduleSnapshot = await transaction.get(scheduleRef);
-    if (!scheduleSnapshot.exists) throw new Error("선택한 회차를 찾을 수 없습니다.");
+    const items: ReservationItem[] = [];
+    const scheduleUpdates: Array<{ ref: FirebaseFirestore.DocumentReference; schedule: Schedule; item: ReservationItem }> = [];
 
-    const schedule = scheduleSnapshot.data() as Schedule;
-    if (schedule.productId !== product.id) throw new Error("체험과 회차 정보가 일치하지 않습니다.");
-    if (schedule.status !== "open") throw new Error("예약 가능한 회차가 아닙니다.");
-    if (schedule.reservedCount + totalPeople > schedule.capacity) throw new Error("남은 정원을 초과했습니다.");
+    for (const inputItem of inputItems) {
+      const productRef = db.collection(PRODUCTS).doc(inputItem.productId);
+      const scheduleRef = db.collection(SCHEDULES).doc(inputItem.scheduleId);
+      const [productSnapshot, scheduleSnapshot] = await Promise.all([transaction.get(productRef), transaction.get(scheduleRef)]);
 
-    const nextReservedCount = schedule.reservedCount + totalPeople;
+      const product = productSnapshot.exists ? (productSnapshot.data() as Product) : await getProductForReservation(inputItem.productId);
+      if (!product) throw new Error("선택한 체험을 찾을 수 없습니다.");
+      if (!scheduleSnapshot.exists) throw new Error("선택한 회차를 찾을 수 없습니다.");
+
+      const schedule = scheduleSnapshot.data() as Schedule;
+      if (schedule.productId !== product.id) throw new Error("체험과 회차 정보가 일치하지 않습니다.");
+      if (schedule.status !== "open") throw new Error(`${product.name} 회차는 예약 가능한 상태가 아닙니다.`);
+
+      const totalPeople = inputItem.adultCount + inputItem.youthCount + inputItem.childCount;
+      if (totalPeople <= 0) throw new Error("인원은 1명 이상이어야 합니다.");
+      if (schedule.reservedCount + totalPeople > schedule.capacity) throw new Error(`${product.name} 회차의 남은 정원을 초과했습니다.`);
+
+      const item: ReservationItem = {
+        productId: product.id,
+        productName: product.name,
+        scheduleId: schedule.id,
+        date: schedule.date,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        adultCount: inputItem.adultCount,
+        youthCount: inputItem.youthCount,
+        childCount: inputItem.childCount,
+        totalPeople,
+        amount: calculateAmount(product, inputItem),
+      };
+      items.push(item);
+      scheduleUpdates.push({ ref: scheduleRef, schedule, item });
+    }
+
+    assertNoTimeConflict(items);
+
+    const visitDates = [...new Set(items.map((item) => item.date))];
+    if (visitDates.length !== 1) throw new Error("한 번의 예약 신청은 같은 방문 날짜의 체험만 선택할 수 있습니다.");
+
+    const totalAmount = items.some((item) => item.amount == null) ? null : items.reduce((sum, item) => sum + (item.amount ?? 0), 0);
+    const totalPeople = Math.max(...items.map((item) => item.totalPeople));
+    const firstItem = items[0];
+
     const reservation: Reservation = {
-      ...input,
-      userId,
       id: reservationRef.id,
+      userId,
       reservationNumber: makeReservationNumber(),
-      productName: product.name,
-      date: schedule.date,
-      startTime: schedule.startTime,
+      items,
+      productId: firstItem.productId,
+      productName: items.length === 1 ? firstItem.productName : `${firstItem.productName} 외 ${items.length - 1}개`,
+      scheduleId: firstItem.scheduleId,
+      date: firstItem.date,
+      startTime: firstItem.startTime,
+      visitDate: firstItem.date,
+      customerName: input.customerName,
+      phone: input.phone,
+      email: input.email,
+      adultCount: firstItem.adultCount,
+      youthCount: firstItem.youthCount,
+      childCount: firstItem.childCount,
       totalPeople,
-      totalAmount: calculateAmount(product, input),
+      totalAmount,
+      paymentMethod: input.paymentMethod,
       status: "submitted",
+      depositorName: input.depositorName,
+      refundBankName: input.refundBankName,
+      refundAccountNumber: input.refundAccountNumber,
+      refundAccountHolder: input.refundAccountHolder,
+      requestMemo: input.requestMemo,
+      adminMemo: input.adminMemo,
+      privacyAgreed: input.privacyAgreed,
+      cautionAgreed: input.cautionAgreed,
       capacityRestored: false,
       cancelledAt: null,
       cancelledBy: null,
@@ -129,13 +213,16 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
       updatedAt: now,
     };
 
-    transaction.set(reservationRef, reservation);
-    transaction.update(scheduleRef, {
-      reservedCount: nextReservedCount,
-      status: nextReservedCount >= schedule.capacity ? "full" : schedule.status,
-      updatedAt: now,
-    });
+    for (const { ref, schedule, item } of scheduleUpdates) {
+      const nextReservedCount = schedule.reservedCount + item.totalPeople;
+      transaction.update(ref, {
+        reservedCount: nextReservedCount,
+        status: nextReservedCount >= schedule.capacity ? "full" : schedule.status,
+        updatedAt: now,
+      });
+    }
 
+    transaction.set(reservationRef, reservation);
     return reservation;
   });
 }

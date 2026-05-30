@@ -13,15 +13,45 @@ export type ReservationStatus =
 export type PaymentMethod = "bank_transfer" | "online";
 export type ReservationCancelActor = "customer" | "admin";
 
-export interface Reservation {
-  id: string;
-  userId?: string;
-  reservationNumber: string;
+export interface ReservationItem {
   productId: string;
   productName: string;
   scheduleId: string;
   date: string;
   startTime: string;
+  endTime: string;
+  adultCount: number;
+  youthCount: number;
+  childCount: number;
+  totalPeople: number;
+  amount: number | null;
+}
+
+export interface ReservationItemInput {
+  productId: string;
+  scheduleId: string;
+  adultCount: number;
+  youthCount: number;
+  childCount: number;
+  productName?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  totalPeople?: number;
+  amount?: number | null;
+}
+
+export interface Reservation {
+  id: string;
+  userId?: string;
+  reservationNumber: string;
+  items?: ReservationItem[];
+  productId: string;
+  productName: string;
+  scheduleId: string;
+  date: string;
+  startTime: string;
+  visitDate?: string;
   customerName: string;
   phone: string;
   email?: string;
@@ -32,6 +62,10 @@ export interface Reservation {
   totalAmount: number | null;
   paymentMethod: PaymentMethod;
   status: ReservationStatus;
+  depositorName?: string;
+  refundBankName?: string;
+  refundAccountNumber?: string;
+  refundAccountHolder?: string;
   requestMemo?: string;
   adminMemo?: string;
   cancelReason?: string;
@@ -45,10 +79,29 @@ export interface Reservation {
   updatedAt: string;
 }
 
-export type ReservationInput = Omit<
-  Reservation,
-  "id" | "reservationNumber" | "status" | "createdAt" | "updatedAt" | "totalPeople" | "totalAmount"
->;
+export interface ReservationInput {
+  items?: ReservationItemInput[];
+  productId?: string;
+  productName?: string;
+  scheduleId?: string;
+  date?: string;
+  startTime?: string;
+  customerName: string;
+  phone: string;
+  email?: string;
+  adultCount?: number;
+  youthCount?: number;
+  childCount?: number;
+  paymentMethod: PaymentMethod;
+  depositorName?: string;
+  refundBankName?: string;
+  refundAccountNumber?: string;
+  refundAccountHolder?: string;
+  requestMemo?: string;
+  adminMemo?: string;
+  privacyAgreed: boolean;
+  cautionAgreed: boolean;
+}
 
 export const reservationStatusLabels: Record<ReservationStatus, string> = {
   submitted: "예약신청",

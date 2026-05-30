@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { createPaymentRequest } from "@/services/payments.service";
 import { getReservation, updateReservationStatus } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
+import { formatReservationItemTime, getReservationItems, getReservationTitle } from "@/lib/utils/reservationItems";
 import { paymentMethodLabels, reservationStatusLabels, type Reservation, type ReservationStatus } from "@/types/reservation";
 
 const statusButtons: ReservationStatus[] = [
@@ -89,12 +90,12 @@ export function AdminReservationDetailClient() {
               </div>
               <div>
                 <dt className="text-[#6b715f]">체험</dt>
-                <dd className="font-bold">{reservation.productName}</dd>
+                <dd className="font-bold">{getReservationTitle(reservation)}</dd>
               </div>
               <div>
-                <dt className="text-[#6b715f]">일시</dt>
+                <dt className="text-[#6b715f]">방문일</dt>
                 <dd className="font-bold">
-                  {reservation.date} {reservation.startTime}
+                  {reservation.visitDate ?? reservation.date}
                 </dd>
               </div>
               <div>
@@ -115,6 +116,41 @@ export function AdminReservationDetailClient() {
               </div>
             </dl>
             <div className="mt-6 rounded-lg bg-[#f8f1e3] p-4">
+              <p className="font-bold">신청 체험</p>
+              <div className="mt-3 grid gap-2">
+                {getReservationItems(reservation).map((item) => (
+                  <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-white p-3 text-sm">
+                    <p className="font-bold">{item.productName}</p>
+                    <p className="mt-1 text-[#5d665e]">
+                      {formatReservationItemTime(item)} · 성인 {item.adultCount}, 중고등 {item.youthCount}, 유초등 {item.childCount} ·{" "}
+                      {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 rounded-lg bg-[#f8f1e3] p-4">
+              <p className="font-bold">입금/환불 정보</p>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-[#6b715f]">입금자명</dt>
+                  <dd className="font-bold">{reservation.depositorName || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">환불은행</dt>
+                  <dd className="font-bold">{reservation.refundBankName || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">환불계좌</dt>
+                  <dd className="font-bold">{reservation.refundAccountNumber || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[#6b715f]">환불 예금주</dt>
+                  <dd className="font-bold">{reservation.refundAccountHolder || "-"}</dd>
+                </div>
+              </dl>
+            </div>
+            <div className="mt-4 rounded-lg bg-[#f8f1e3] p-4">
               <p className="font-bold">요청사항</p>
               <p className="mt-2 text-sm leading-6 text-[#5d665e]">{reservation.requestMemo || "없음"}</p>
             </div>
