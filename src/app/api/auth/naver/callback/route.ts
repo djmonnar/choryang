@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getNaverStateCookieOptions, naverStateCookieName, setAuthSession } from "@/lib/auth/session";
+import { authReturnToCookieName, getNaverStateCookieOptions, naverStateCookieName, setAuthSession } from "@/lib/auth/session";
 import { upsertNaverUser } from "@/services/users.service";
 import type { NaverProfile } from "@/types/user";
 
@@ -22,7 +22,7 @@ interface NaverProfileResponse {
 }
 
 function redirectWithError(request: Request, reason: string) {
-  const url = new URL("/reservation", request.url);
+  const url = new URL("/mypage", request.url);
   url.searchParams.set("authError", reason);
   return NextResponse.redirect(url);
 }
@@ -83,8 +83,15 @@ export async function GET(request: Request) {
     const user = await upsertNaverUser(profile);
     await setAuthSession(user);
 
-    const response = NextResponse.redirect(new URL("/mypage", request.url));
+    const returnTo = cookieStore.get(authReturnToCookieName)?.value || "/mypage";
+    const destination = new URL(returnTo.startsWith("/") ? returnTo : "/mypage", request.url);
+    destination.searchParams.set("login", "success");
+    const response = NextResponse.redirect(destination);
     response.cookies.set(naverStateCookieName, "", {
+      ...getNaverStateCookieOptions(),
+      maxAge: 0,
+    });
+    response.cookies.set(authReturnToCookieName, "", {
       ...getNaverStateCookieOptions(),
       maxAge: 0,
     });

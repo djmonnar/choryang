@@ -6,6 +6,7 @@ import { toPublicUser } from "@/types/user";
 
 export const authSessionCookieName = "choryang_session";
 export const naverStateCookieName = "choryang_naver_state";
+export const authReturnToCookieName = "choryang_auth_return_to";
 
 interface SessionPayload {
   userId: string;

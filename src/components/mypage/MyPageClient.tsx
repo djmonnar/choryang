@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CalendarCheck, Search } from "lucide-react";
 import { listReservations } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
@@ -9,6 +10,7 @@ import { paymentMethodLabels, reservationStatusLabels, type Reservation } from "
 import type { PublicUser } from "@/types/user";
 
 export function MyPageClient() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,10 +32,16 @@ export function MyPageClient() {
   }
 
   if (!user) {
+    const authError = searchParams.get("authError");
     return (
       <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold">로그인이 필요합니다</h2>
-        <p className="mt-3 leading-7 text-[#5d665e]">네이버 로그인 후 예약하면 이곳에서 내 예약을 더 쉽게 확인할 수 있습니다.</p>
+        <p className="mt-3 leading-7 text-[#5d665e]">네이버 로그인 후 이 화면에서 고객정보와 내 예약을 확인할 수 있습니다.</p>
+        {authError ? (
+          <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            네이버 로그인 처리가 완료되지 않았습니다. Vercel 환경변수와 네이버 Callback URL을 확인한 뒤 다시 시도해 주세요.
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-wrap gap-2">
           <Link href="/api/auth/naver/login" className="inline-flex items-center gap-2 rounded-md bg-[#03c75a] px-5 py-3 font-bold text-white">
             네이버 로그인
@@ -48,10 +56,18 @@ export function MyPageClient() {
 
   return (
     <div className="grid gap-6">
+      {searchParams.get("login") === "success" ? (
+        <div className="rounded-lg border border-[#b7ddc6] bg-[#edf7f1] p-5 text-sm font-semibold text-[#24573a] shadow-sm">
+          네이버 로그인이 완료되었습니다. 아래 고객정보와 예약 내역을 확인해 주세요.
+        </div>
+      ) : null}
+
       <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#1e7894]">Naver Member</p>
-        <h2 className="mt-2 text-2xl font-bold">{user.name || user.nickname || "회원"}님, 반갑습니다</h2>
-        <p className="mt-3 leading-7 text-[#5d665e]">네이버 로그인으로 예약하면 예약자 정보가 자동 입력되고, 내 예약 화면에서 예약 내역을 모아볼 수 있습니다.</p>
+        <h2 className="mt-2 text-2xl font-bold">로그인된 고객정보</h2>
+        <p className="mt-3 leading-7 text-[#5d665e]">
+          {user.name || user.nickname || "회원"}님은 네이버 로그인으로 다슬기초량마을 회원 처리되었습니다. 예약 신청 시 아래 정보가 자동 입력됩니다.
+        </p>
       </section>
 
       <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">

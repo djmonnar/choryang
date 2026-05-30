@@ -46,7 +46,7 @@ export function SiteHeader() {
   const authLinks = user ? (
     <>
       <Link href="/mypage" className="inline-flex items-center gap-2 rounded-md border border-[#d7ccb7] px-4 py-2 text-sm font-semibold text-[#3c4439]">
-        내 예약
+        내 정보/예약
       </Link>
       <button type="button" onClick={logout} className="inline-flex items-center gap-2 rounded-md bg-[#f4eee0] px-4 py-2 text-sm font-semibold text-[#24573a]">
         로그아웃
@@ -120,7 +120,7 @@ export function SiteHeader() {
                   className="inline-flex items-center justify-center rounded-md border border-[#d7ccb7] px-3 py-3 text-sm font-semibold text-[#3c4439]"
                   onClick={closeMenu}
                 >
-                  내 예약
+                  내 정보/예약
                 </Link>
                 <button
                   type="button"
