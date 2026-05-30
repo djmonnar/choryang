@@ -64,3 +64,17 @@ export async function upsertNaverUser(profile: NaverProfile): Promise<ChoryangUs
   await setDoc(doc(getUsersCollection(), id), user);
   return user;
 }
+
+export async function markNaverUserDisconnected(naverId: string): Promise<ChoryangUser | null> {
+  const existing = await findNaverUser(naverId);
+  if (!existing) return null;
+
+  const now = new Date().toISOString();
+  const updated: ChoryangUser = {
+    ...existing,
+    disconnectedAt: now,
+    updatedAt: now,
+  };
+  await setDoc(doc(getUsersCollection(), existing.id), updated, { merge: true });
+  return updated;
+}

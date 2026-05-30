@@ -9,6 +9,7 @@ export interface ChoryangUser {
   email?: string;
   mobile?: string;
   profileImage?: string;
+  disconnectedAt?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt: string;
