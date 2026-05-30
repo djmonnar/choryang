@@ -55,6 +55,27 @@ export function MyPageClient() {
       </section>
 
       <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold">네이버 제공 회원정보</h2>
+        <p className="mt-2 text-sm leading-6 text-[#5d665e]">
+          예약자 정보 자동 입력과 예약 안내 연락을 위해 네이버에서 제공받은 회원정보를 사용합니다.
+        </p>
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+          <div className="rounded-lg bg-[#f8f1e3] p-4">
+            <dt className="font-bold text-[#24573a]">회원이름</dt>
+            <dd className="mt-2 text-[#1d261f]">{user.name || user.nickname || "제공 정보 없음"}</dd>
+          </div>
+          <div className="rounded-lg bg-[#f8f1e3] p-4">
+            <dt className="font-bold text-[#24573a]">이메일 주소</dt>
+            <dd className="mt-2 text-[#1d261f]">{user.email || "제공 정보 없음"}</dd>
+          </div>
+          <div className="rounded-lg bg-[#f8f1e3] p-4">
+            <dt className="font-bold text-[#24573a]">휴대전화번호</dt>
+            <dd className="mt-2 text-[#1d261f]">{user.mobile || "제공 정보 없음"}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold">내 예약</h2>
           <Link href="/reservation" className="inline-flex items-center gap-2 rounded-md bg-[#24573a] px-4 py-2 text-sm font-bold text-white">
