@@ -1,16 +1,11 @@
-import { collection, doc, getDoc, getDocs, limit, query, setDoc, where } from "firebase/firestore";
 import { randomUUID } from "node:crypto";
-import { getFirestoreDb } from "@/lib/firebase/firestore";
+import { getAdminFirestore } from "@/lib/firebase/admin";
 import type { ChoryangUser, NaverProfile } from "@/types/user";
 
 const COLLECTION = "users";
 
 function getUsersCollection() {
-  const db = getFirestoreDb();
-  if (!db) {
-    throw new Error("Firebase 환경변수가 설정되지 않아 users 컬렉션에 접근할 수 없습니다.");
-  }
-  return collection(db, COLLECTION);
+  return getAdminFirestore().collection(COLLECTION);
 }
 
 function profileToUserFields(profile: NaverProfile) {
@@ -23,16 +18,23 @@ function profileToUserFields(profile: NaverProfile) {
   };
 }
 
-export async function getUserById(id: string): Promise<ChoryangUser | null> {
-  const snapshot = await getDoc(doc(getUsersCollection(), id));
-  if (!snapshot.exists()) return null;
+function userFromDoc(snapshot: FirebaseFirestore.DocumentSnapshot): ChoryangUser | null {
+  if (!snapshot.exists) return null;
   return snapshot.data() as ChoryangUser;
 }
 
+export async function getUserById(id: string): Promise<ChoryangUser | null> {
+  const snapshot = await getUsersCollection().doc(id).get();
+  return userFromDoc(snapshot);
+}
+
 export async function findNaverUser(naverId: string): Promise<ChoryangUser | null> {
-  const snapshot = await getDocs(query(getUsersCollection(), where("provider", "==", "naver"), where("naverId", "==", naverId), limit(1)));
-  const found = snapshot.docs[0];
-  return found ? (found.data() as ChoryangUser) : null;
+  const snapshot = await getUsersCollection()
+    .where("provider", "==", "naver")
+    .where("naverId", "==", naverId)
+    .limit(1)
+    .get();
+  return snapshot.docs[0]?.data() as ChoryangUser | null;
 }
 
 export async function upsertNaverUser(profile: NaverProfile): Promise<ChoryangUser> {
@@ -47,7 +49,7 @@ export async function upsertNaverUser(profile: NaverProfile): Promise<ChoryangUs
       updatedAt: now,
       lastLoginAt: now,
     };
-    await setDoc(doc(getUsersCollection(), existing.id), updated, { merge: true });
+    await getUsersCollection().doc(existing.id).set(updated, { merge: true });
     return updated;
   }
 
@@ -61,7 +63,7 @@ export async function upsertNaverUser(profile: NaverProfile): Promise<ChoryangUs
     updatedAt: now,
     lastLoginAt: now,
   };
-  await setDoc(doc(getUsersCollection(), id), user);
+  await getUsersCollection().doc(id).set(user);
   return user;
 }
 
@@ -75,6 +77,6 @@ export async function markNaverUserDisconnected(naverId: string): Promise<Chorya
     disconnectedAt: now,
     updatedAt: now,
   };
-  await setDoc(doc(getUsersCollection(), existing.id), updated, { merge: true });
+  await getUsersCollection().doc(existing.id).set(updated, { merge: true });
   return updated;
 }
