@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  trailingSlash: true,
+  output: isGithubPages ? "export" : undefined,
+  trailingSlash: isGithubPages,
   basePath: isGithubPages ? "/choryang" : undefined,
   assetPrefix: isGithubPages ? "/choryang/" : undefined,
   images: {

@@ -14,6 +14,7 @@ export type PaymentMethod = "bank_transfer" | "online";
 
 export interface Reservation {
   id: string;
+  userId?: string;
   reservationNumber: string;
   productId: string;
   productName: string;

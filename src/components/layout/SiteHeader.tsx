@@ -2,8 +2,9 @@
 
 import { CalendarCheck, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { withBasePath } from "@/lib/utils/publicPath";
+import type { PublicUser } from "@/types/user";
 
 const navItems = [
   ["마을소개", "/about"],
@@ -16,7 +17,46 @@ const navItems = [
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<PublicUser | null>(null);
+  const naverLoginEnabled = process.env.NEXT_PUBLIC_NAVER_LOGIN_ENABLED !== "false";
   const closeMenu = () => setIsMenuOpen(false);
+
+  useEffect(() => {
+    if (!naverLoginEnabled) return;
+    let isMounted = true;
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((response) => response.json() as Promise<{ user: PublicUser | null }>)
+      .then((data) => {
+        if (isMounted) setUser(data.user);
+      })
+      .catch(() => {
+        if (isMounted) setUser(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [naverLoginEnabled]);
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setUser(null);
+    closeMenu();
+  }
+
+  const authLinks = user ? (
+    <>
+      <Link href="/mypage" className="inline-flex items-center gap-2 rounded-md border border-[#d7ccb7] px-4 py-2 text-sm font-semibold text-[#3c4439]">
+        내 예약
+      </Link>
+      <button type="button" onClick={logout} className="inline-flex items-center gap-2 rounded-md bg-[#f4eee0] px-4 py-2 text-sm font-semibold text-[#24573a]">
+        로그아웃
+      </button>
+    </>
+  ) : naverLoginEnabled ? (
+    <Link href="/api/auth/naver/login" className="inline-flex items-center gap-2 rounded-md bg-[#03c75a] px-4 py-2 text-sm font-semibold text-white">
+      네이버 로그인
+    </Link>
+  ) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#e7decb] bg-white/95 backdrop-blur">
@@ -41,6 +81,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="hidden gap-2 sm:flex">
+          {authLinks}
           <Link href="/reservation/check" className="inline-flex items-center gap-2 rounded-md border border-[#d7ccb7] px-4 py-2 text-sm font-semibold text-[#3c4439]">
             <Search className="h-4 w-4" /> 예약조회
           </Link>
@@ -70,6 +111,36 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
+        {naverLoginEnabled ? (
+          <div className="mx-auto grid w-full max-w-7xl gap-2 px-4 pb-2">
+            {user ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/mypage"
+                  className="inline-flex items-center justify-center rounded-md border border-[#d7ccb7] px-3 py-3 text-sm font-semibold text-[#3c4439]"
+                  onClick={closeMenu}
+                >
+                  내 예약
+                </Link>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="inline-flex items-center justify-center rounded-md bg-[#f4eee0] px-3 py-3 text-sm font-semibold text-[#24573a]"
+                >
+                  로그아웃
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/api/auth/naver/login"
+                className="inline-flex items-center justify-center rounded-md bg-[#03c75a] px-3 py-3 text-sm font-semibold text-white"
+                onClick={closeMenu}
+              >
+                네이버 로그인
+              </Link>
+            )}
+          </div>
+        ) : null}
         <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-2 px-4 pb-4">
           <Link
             href="/reservation/check"

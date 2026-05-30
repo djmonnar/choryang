@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { seedProducts } from "@/data/seedProducts";
@@ -9,6 +9,7 @@ import { seedSchedules } from "@/data/seedSchedules";
 import { calculateAmount, formatCurrency } from "@/lib/utils/format";
 import { createReservation } from "@/services/reservations.service";
 import type { PaymentMethod } from "@/types/reservation";
+import type { PublicUser } from "@/types/user";
 
 const steps = ["체험 선택", "날짜 선택", "시간 선택", "인원 선택", "예약자 정보", "결제 방식", "신청 완료"];
 
@@ -30,6 +31,7 @@ export function ReservationWizard() {
   const [cautionAgreed, setCautionAgreed] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank_transfer");
   const [error, setError] = useState("");
+  const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
 
   const product = seedProducts.find((item) => item.id === productId);
   const schedules = useMemo(() => seedSchedules.filter((schedule) => schedule.productId === productId && schedule.status === "open"), [productId]);
@@ -39,6 +41,25 @@ export function ReservationWizard() {
   const schedulesForDate = schedules.filter((item) => item.date === selectedDate);
   const totalPeople = adultCount + youthCount + childCount;
   const amount = product ? calculateAmount(product, { adultCount, youthCount, childCount }) : null;
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((response) => response.json() as Promise<{ user: PublicUser | null }>)
+      .then((data) => {
+        if (!isMounted || !data.user) return;
+        setCurrentUser(data.user);
+        setCustomerName((value) => value || data.user?.name || data.user?.nickname || "");
+        setPhone((value) => value || data.user?.mobile || "");
+        setEmail((value) => value || data.user?.email || "");
+      })
+      .catch(() => {
+        if (isMounted) setCurrentUser(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function validateCurrentStep() {
     if (step === 0 && !productId) return "체험을 선택해 주세요.";
@@ -71,6 +92,7 @@ export function ReservationWizard() {
     }
     try {
       const reservation = createReservation({
+        userId: currentUser?.id,
         productId: product.id,
         productName: product.name,
         scheduleId: schedule.id,
@@ -167,6 +189,11 @@ export function ReservationWizard() {
           {step === 4 ? (
             <div className="grid gap-4">
               <h2 className="text-xl font-bold">예약자 정보 입력</h2>
+              {currentUser ? (
+                <p className="rounded-md bg-[#edf7f1] px-4 py-3 text-sm font-semibold text-[#24573a]">
+                  네이버 로그인 정보로 예약자 정보를 자동 입력했습니다. 필요한 경우 수정할 수 있습니다.
+                </p>
+              ) : null}
               <input placeholder="예약자 이름" value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="rounded-md border border-[#d6cab5] px-3 py-3" />
               <input placeholder="연락처 예: 010-1234-5678" value={phone} onChange={(event) => setPhone(event.target.value)} className="rounded-md border border-[#d6cab5] px-3 py-3" />
               <input placeholder="이메일 선택 입력" value={email} onChange={(event) => setEmail(event.target.value)} className="rounded-md border border-[#d6cab5] px-3 py-3" />
