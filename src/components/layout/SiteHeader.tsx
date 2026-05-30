@@ -23,6 +23,7 @@ export function SiteHeader() {
 
   useEffect(() => {
     if (!naverLoginEnabled) return;
+
     let isMounted = true;
     fetch("/api/auth/me", { credentials: "include" })
       .then((response) => response.json() as Promise<{ user: PublicUser | null }>)
@@ -32,6 +33,7 @@ export function SiteHeader() {
       .catch(() => {
         if (isMounted) setUser(null);
       });
+
     return () => {
       isMounted = false;
     };
@@ -60,18 +62,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#e7decb] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-18 w-full max-w-7xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-3" aria-label="다슬기초량마을 홈" onClick={closeMenu}>
+      <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center justify-between px-4">
+        <Link href="/" className="flex min-w-0 items-center" aria-label="다슬기초량마을 홈" onClick={closeMenu}>
           <img
-            src={withBasePath("/images/choryang/choryang-cute-icon.png")}
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-xl object-contain shadow-sm"
-            aria-hidden
+            src={withBasePath("/images/choryang/choryang-logo-wordmark.png")}
+            alt="다슬기초량마을"
+            className="h-12 w-auto max-w-[210px] object-contain sm:h-14 sm:max-w-[270px]"
           />
-          <span>
-            <span className="block text-lg font-black text-[#183721]">다슬기초량마을</span>
-            <span className="hidden text-xs text-[#6b715f] sm:block">사천 농촌체험휴양마을</span>
-          </span>
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-semibold text-[#2f3b32] lg:flex" aria-label="주요 메뉴">
           {navItems.map(([label, href]) => (
@@ -100,10 +97,7 @@ export function SiteHeader() {
           {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
-      <div
-        id="mobile-site-menu"
-        className={`border-t border-[#e7decb] bg-white shadow-lg lg:hidden ${isMenuOpen ? "block" : "hidden"}`}
-      >
+      <div id="mobile-site-menu" className={`border-t border-[#e7decb] bg-white shadow-lg lg:hidden ${isMenuOpen ? "block" : "hidden"}`}>
         <nav className="mx-auto grid w-full max-w-7xl gap-1 px-4 py-3 text-sm font-semibold text-[#2f3b32]" aria-label="모바일 메뉴">
           {navItems.map(([label, href]) => (
             <Link key={href} href={href} className="rounded-md px-3 py-3 hover:bg-[#f6f1e7] hover:text-[#1e7894]" onClick={closeMenu}>

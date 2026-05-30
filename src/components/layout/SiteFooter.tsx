@@ -8,9 +8,9 @@ export function SiteFooter() {
       <div className="section-shell grid gap-8 py-10 md:grid-cols-[1fr_2fr_1fr]">
         <div>
           <img
-            src={withBasePath("/images/choryang/choryang-cute-logo-badge.png")}
+            src={withBasePath("/images/choryang/choryang-logo-wordmark.png")}
             alt="다슬기초량마을 사천 농촌체험휴양마을"
-            className="h-24 w-24 rounded-2xl object-contain shadow-sm"
+            className="h-auto w-60 rounded-md bg-white p-3 object-contain shadow-sm"
           />
           <p className="mt-4 text-xl font-black">다슬기초량마을</p>
           <p className="mt-3 text-sm leading-6 text-white/75">청정 초량강과 함께하는 사천 농촌체험 휴양마을</p>
@@ -31,7 +31,9 @@ export function SiteFooter() {
         </div>
         <div className="text-sm leading-6 text-white/75">
           <p>{siteSettings.address}</p>
-          <p>{siteSettings.managerName} {siteSettings.managerPhone}</p>
+          <p>
+            {siteSettings.managerName} {siteSettings.managerPhone}
+          </p>
           <p className="mt-3">Project: choryang</p>
         </div>
       </div>
