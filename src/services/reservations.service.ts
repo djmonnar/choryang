@@ -3,6 +3,9 @@ import type { Reservation, ReservationInput, ReservationStatus } from "@/types/r
 async function parseReservationResponse(response: Response) {
   const data = (await response.json().catch(() => ({}))) as { reservation?: Reservation; reservations?: Reservation[]; error?: string };
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      if (typeof window !== "undefined") window.location.href = "/admin/login";
+    }
     throw new Error(data.error || "예약 처리 중 오류가 발생했습니다. 관리자에게 문의해 주세요.");
   }
   return data;

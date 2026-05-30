@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "@/lib/auth/admin-session";
 import { getReservationAdmin, updateReservationStatusAdmin } from "@/services/reservations-admin.service";
 import type { ReservationStatus } from "@/types/reservation";
 
@@ -7,6 +8,9 @@ interface RouteContext {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
+  const admin = await requireAdminSession();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await context.params;
     const reservation = await getReservationAdmin(id);
@@ -18,6 +22,9 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const admin = await requireAdminSession();
+  if (!admin.ok) return admin.response;
+
   try {
     const { id } = await context.params;
     const body = (await request.json()) as { status?: ReservationStatus; adminMemo?: string };

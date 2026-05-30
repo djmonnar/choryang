@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAdminSession } from "@/lib/auth/admin-session";
 import { listReservationsAdmin } from "@/services/reservations-admin.service";
 
 export async function GET() {
+  const admin = await requireAdminSession();
+  if (!admin.ok) return admin.response;
+
   try {
     const reservations = await listReservationsAdmin();
     return NextResponse.json({ reservations });
