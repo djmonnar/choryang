@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CalendarCheck, Search } from "lucide-react";
-import { listReservations } from "@/services/reservations.service";
+import { listMyReservations } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
 import { paymentMethodLabels, reservationStatusLabels, type Reservation } from "@/types/reservation";
 import type { PublicUser } from "@/types/user";
@@ -20,9 +20,7 @@ export function MyPageClient() {
       .then((response) => response.json() as Promise<{ user: PublicUser | null }>)
       .then((data) => {
         setUser(data.user);
-        if (data.user) {
-          setReservations(listReservations().filter((reservation) => reservation.userId === data.user?.id));
-        }
+        if (data.user) listMyReservations().then(setReservations).catch(() => setReservations([]));
       })
       .finally(() => setIsLoading(false));
   }, []);

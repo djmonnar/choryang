@@ -15,11 +15,16 @@ export function ReservationCheck() {
     <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
       <form
         className="rounded-lg border border-[#e4d9c5] bg-white p-6 shadow-sm"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
-          const found = findReservation(reservationNumber, phone);
-          setResult(found);
-          setMessage(found ? "" : "일치하는 예약을 찾지 못했습니다. 예약번호와 연락처를 확인해 주세요.");
+          try {
+            const found = await findReservation(reservationNumber, phone);
+            setResult(found);
+            setMessage(found ? "" : "일치하는 예약을 찾지 못했습니다. 예약번호와 연락처를 확인해 주세요.");
+          } catch {
+            setResult(null);
+            setMessage("예약 조회 중 오류가 발생했습니다. 관리자에게 문의해 주세요.");
+          }
         }}
       >
         <label className="block text-sm font-bold">예약번호</label>

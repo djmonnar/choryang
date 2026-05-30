@@ -84,15 +84,14 @@ export function ReservationWizard() {
     setStep((value) => Math.min(value + 1, steps.length - 1));
   }
 
-  function submit() {
+  async function submit() {
     const message = validateCurrentStep();
     if (message || !product || !schedule) {
       setError(message || "예약 정보를 확인해 주세요.");
       return;
     }
     try {
-      const reservation = createReservation({
-        userId: currentUser?.id,
+      const reservation = await createReservation({
         productId: product.id,
         productName: product.name,
         scheduleId: schedule.id,
@@ -112,7 +111,7 @@ export function ReservationWizard() {
       });
       router.push(`/reservation/complete?reservationNumber=${reservation.reservationNumber}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "예약 신청 중 오류가 발생했습니다.");
+      setError(caught instanceof Error ? caught.message : "예약 처리 중 오류가 발생했습니다. 관리자에게 문의해 주세요.");
     }
   }
 

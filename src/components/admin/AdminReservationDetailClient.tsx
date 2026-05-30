@@ -1,14 +1,14 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ProtectedRoute } from "@/components/admin/auth";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { createPaymentRequest } from "@/services/payments.service";
 import { getReservation, updateReservationStatus } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
-import { paymentMethodLabels, reservationStatusLabels, type ReservationStatus } from "@/types/reservation";
+import { paymentMethodLabels, reservationStatusLabels, type Reservation, type ReservationStatus } from "@/types/reservation";
 
 const statusButtons: ReservationStatus[] = [
   "checking",
@@ -28,7 +28,26 @@ export function AdminReservationDetailClient() {
   const searchParams = useSearchParams();
   const [memo, setMemo] = useState("");
   const [message, setMessage] = useState("");
-  const reservation = getReservation(params.id ?? searchParams.get("id") ?? "");
+  const [reservation, setReservation] = useState<Reservation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const reservationId = params.id ?? searchParams.get("id") ?? "";
+
+  useEffect(() => {
+    getReservation(reservationId)
+      .then(setReservation)
+      .catch(() => setMessage("예약 상세를 불러오지 못했습니다."))
+      .finally(() => setIsLoading(false));
+  }, [reservationId]);
+
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <AdminShell title="예약 상세">
+          <p>예약 정보를 불러오고 있습니다.</p>
+        </AdminShell>
+      </ProtectedRoute>
+    );
+  }
 
   if (!reservation) {
     return (
@@ -113,9 +132,9 @@ export function AdminReservationDetailClient() {
                 <button
                   key={status}
                   type="button"
-                  onClick={() => {
-                    updateReservationStatus(reservation.id, status, memo);
-                    router.refresh();
+                  onClick={async () => {
+                    const updated = await updateReservationStatus(reservation.id, status, memo);
+                    setReservation(updated);
                     setMessage(`${reservationStatusLabels[status]} 상태로 변경했습니다.`);
                   }}
                   className="rounded-md border border-[#d7ccb7] px-3 py-2 text-sm font-bold hover:bg-[#f8f1e3]"

@@ -34,11 +34,11 @@ export async function createPaymentRequest(reservation: Reservation) {
     memo: "MockPaymentProvider로 생성된 결제 요청입니다.",
   };
   writeStorage(KEY, [payment, ...listPayments()]);
-  updateReservationStatus(reservation.id, reservation.paymentMethod === "bank_transfer" ? "bank_waiting" : "payment_requested");
+  await updateReservationStatus(reservation.id, reservation.paymentMethod === "bank_transfer" ? "bank_waiting" : "payment_requested");
   return payment;
 }
 
-export function markPaymentPaid(paymentId: string) {
+export async function markPaymentPaid(paymentId: string) {
   const payments = listPayments();
   const target = payments.find((payment) => payment.id === paymentId);
   if (!target) throw new Error("결제 정보를 찾을 수 없습니다.");
@@ -47,6 +47,6 @@ export function markPaymentPaid(paymentId: string) {
     KEY,
     payments.map((payment) => (payment.id === paymentId ? updated : payment)),
   );
-  updateReservationStatus(target.reservationId, "paid");
+  await updateReservationStatus(target.reservationId, "paid");
   return updated;
 }

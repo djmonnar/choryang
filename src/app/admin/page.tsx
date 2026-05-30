@@ -1,21 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ProtectedRoute } from "@/components/admin/auth";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { listReservations } from "@/services/reservations.service";
+import type { Reservation } from "@/types/reservation";
 
 export default function AdminDashboardPage() {
-  const reservations = listReservations();
-  const today = "2026-05-29";
-  const weekCount = reservations.filter((item) => item.date >= today && item.date <= "2026-06-05").length;
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    listReservations()
+      .then(setReservations)
+      .catch(() => setMessage("예약 목록을 불러오지 못했습니다."));
+  }, []);
+  const today = new Date().toISOString().slice(0, 10);
+  const weekEnd = useMemo(() => {
+    const date = new Date(`${today}T00:00:00+09:00`);
+    date.setDate(date.getDate() + 7);
+    return date.toISOString().slice(0, 10);
+  }, [today]);
+  const weekCount = reservations.filter((item) => item.date >= today && item.date <= weekEnd).length;
   const paymentWaiting = reservations.filter((item) => ["payment_requested", "bank_waiting"].includes(item.status)).length;
   const confirmed = reservations.filter((item) => item.status === "confirmed").length;
 
   return (
     <ProtectedRoute>
       <AdminShell title="대시보드">
+        {message ? <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{message}</p> : null}
         <div className="grid gap-4 md:grid-cols-4">
           {[
             ["오늘 예약", reservations.filter((item) => item.date === today).length],

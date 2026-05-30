@@ -1,20 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ProtectedRoute } from "@/components/admin/auth";
 import { createPaymentRequest, listPayments, markPaymentPaid } from "@/services/payments.service";
 import { listReservations } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
+import type { Reservation } from "@/types/reservation";
 
 export default function AdminPaymentsPage() {
   const [version, setVersion] = useState(0);
-  const reservations = listReservations().filter((item) => item.totalAmount !== null);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    listReservations()
+      .then((items) => setReservations(items.filter((item) => item.totalAmount !== null)))
+      .catch(() => setMessage("예약 목록을 불러오지 못했습니다."));
+  }, [version]);
   const payments = listPayments();
 
   return (
     <ProtectedRoute>
       <AdminShell title="결제 관리">
+        {message ? <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{message}</p> : null}
         <div className="rounded-lg border border-[#e4d9c5] bg-white p-5 shadow-sm">
           <h2 className="text-xl font-bold">결제요청 처리</h2>
           <div className="mt-4 grid gap-3">
@@ -36,7 +45,7 @@ export default function AdminPaymentsPage() {
             <thead className="bg-[#f8f1e3]"><tr><th className="p-3">결제ID</th><th className="p-3">예약ID</th><th className="p-3">Provider</th><th className="p-3">금액</th><th className="p-3">상태</th><th className="p-3">처리</th></tr></thead>
             <tbody>
               {payments.map((payment) => (
-                <tr key={`${payment.id}-${version}`} className="border-t border-[#eee4d4]"><td className="p-3">{payment.id}</td><td className="p-3">{payment.reservationId}</td><td className="p-3">{payment.provider}</td><td className="p-3">{formatCurrency(payment.amount)}</td><td className="p-3">{payment.status}</td><td className="p-3"><button className="font-bold text-[#24573a]" onClick={() => { markPaymentPaid(payment.id); setVersion(version + 1); }} type="button">결제완료</button></td></tr>
+                <tr key={`${payment.id}-${version}`} className="border-t border-[#eee4d4]"><td className="p-3">{payment.id}</td><td className="p-3">{payment.reservationId}</td><td className="p-3">{payment.provider}</td><td className="p-3">{formatCurrency(payment.amount)}</td><td className="p-3">{payment.status}</td><td className="p-3"><button className="font-bold text-[#24573a]" onClick={async () => { await markPaymentPaid(payment.id); setVersion(version + 1); }} type="button">결제완료</button></td></tr>
               ))}
               {payments.length === 0 ? <tr><td colSpan={6} className="p-4 text-[#687166]">결제 기록이 없습니다.</td></tr> : null}
             </tbody>

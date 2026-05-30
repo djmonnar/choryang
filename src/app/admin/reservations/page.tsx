@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ProtectedRoute } from "@/components/admin/auth";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { listReservations } from "@/services/reservations.service";
-import { paymentMethodLabels, reservationStatusLabels, type ReservationStatus } from "@/types/reservation";
+import { paymentMethodLabels, reservationStatusLabels, type Reservation, type ReservationStatus } from "@/types/reservation";
 
 export default function AdminReservationsPage() {
   const [status, setStatus] = useState<ReservationStatus | "all">("all");
   const [query, setQuery] = useState("");
-  const reservations = listReservations();
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    listReservations()
+      .then(setReservations)
+      .catch(() => setMessage("예약 목록을 불러오지 못했습니다."));
+  }, []);
   const filtered = useMemo(
     () =>
       reservations.filter((item) => {
@@ -25,6 +31,7 @@ export default function AdminReservationsPage() {
   return (
     <ProtectedRoute>
       <AdminShell title="예약 목록">
+        {message ? <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{message}</p> : null}
         <div className="rounded-lg border border-[#e4d9c5] bg-white p-5 shadow-sm">
           <div className="grid gap-3 md:grid-cols-[180px_1fr]">
             <select value={status} onChange={(event) => setStatus(event.target.value as ReservationStatus | "all")} className="rounded-md border border-[#d6cab5] px-3 py-2">
