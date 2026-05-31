@@ -23,6 +23,8 @@ export function SiteFooter() {
             ["숙박·식사", "/stay-food"],
             ["오시는 길", "/location"],
             ["관리자", "/admin"],
+            ["개인정보처리방침", "/privacy"],
+            ["이용약관", "/terms"],
           ].map(([label, href]) => (
             <Link key={href} href={href} className="hover:text-white">
               {label}
