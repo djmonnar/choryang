@@ -166,6 +166,13 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
       const reservedUnits = getReservationCapacityUnits(product, totalPeople);
       if (schedule.reservedCount + reservedUnits > schedule.capacity) throw new Error(`${product.name} 회차의 남은 정원을 초과했습니다.`);
 
+      const priceOption = product.priceOptions?.length
+        ? product.priceOptions.find((option) => option.id === inputItem.priceOptionId) ?? product.priceOptions[0]
+        : undefined;
+      if (inputItem.priceOptionId && !product.priceOptions?.some((option) => option.id === inputItem.priceOptionId)) {
+        throw new Error(`${product.name}의 가격 옵션이 올바르지 않습니다.`);
+      }
+
       const item: ReservationItem = {
         productId: product.id,
         productName: product.name,
@@ -179,7 +186,10 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
         preschoolCount,
         totalPeople,
         reservedUnits,
-        amount: calculateAmount(product, { ...inputItem, preschoolCount }, schedule.date),
+        priceOptionId: priceOption?.id,
+        priceOptionLabel: priceOption?.label,
+        unitPrice: priceOption?.price,
+        amount: calculateAmount(product, { ...inputItem, preschoolCount }, schedule.date, priceOption?.id),
       };
       items.push(item);
       scheduleUpdates.push({ ref: scheduleRef, schedule, item });

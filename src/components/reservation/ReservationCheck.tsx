@@ -55,7 +55,8 @@ export function ReservationCheck() {
                 <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-[#f8f1e3] p-3 text-sm">
                   <p className="font-bold">{item.productName}</p>
                   <p className="mt-1 text-[#5d665e]">
-                    {formatReservationItemTime(item)} · {item.totalPeople}명 · {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
+                    {formatReservationItemTime(item)} · {item.totalPeople}명
+                    {item.priceOptionLabel ? ` · ${item.priceOptionLabel}` : ""} · {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
                   </p>
                 </div>
               ))}

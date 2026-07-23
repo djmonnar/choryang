@@ -160,7 +160,8 @@ export function AdminReservationDetailClient() {
                   <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-white p-3 text-sm">
                     <p className="font-bold">{item.productName}</p>
                     <p className="mt-1 text-[#5d665e]">
-                      {formatReservationItemTime(item)} · 성인 {item.adultCount}, 청소년 {item.youthCount + item.childCount}, 유치원 {item.preschoolCount ?? 0} ·{" "}
+                      {formatReservationItemTime(item)} · 성인 {item.adultCount}, 청소년 {item.youthCount + item.childCount}, 유치원 {item.preschoolCount ?? 0}
+                      {item.priceOptionLabel ? ` · ${item.priceOptionLabel}` : ""} ·{" "}
                       {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
                     </p>
                   </div>

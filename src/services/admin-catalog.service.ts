@@ -48,6 +48,7 @@ export async function updateProductAdmin(id: string, input: Partial<Product>): P
     "basePrice",
     "maxPrice",
     "priceNote",
+    "priceOptions",
     "minPeople",
     "maxPeople",
     "durationMinutes",

@@ -49,6 +49,7 @@ export function ReservationWizard() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [visitDate, setVisitDate] = useState("");
   const [selectedScheduleIds, setSelectedScheduleIds] = useState<string[]>([]);
+  const [priceOptionBySchedule, setPriceOptionBySchedule] = useState<Record<string, string>>({});
   const [productsLoading, setProductsLoading] = useState(true);
   const [schedulesLoading, setSchedulesLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -88,10 +89,13 @@ export function ReservationWizard() {
   const selectedItems = selectedSchedules.map((schedule) => {
     const product = productById.get(schedule.productId);
     const counts = { adultCount, youthCount, childCount: 0, preschoolCount };
+    const priceOptionId = priceOptionBySchedule[schedule.id] ?? product?.priceOptions?.[0]?.id;
+    const priceOption = product?.priceOptions?.find((option) => option.id === priceOptionId);
     return {
       schedule,
       product,
-      amount: product ? calculateAmount(product, counts, schedule.date) : null,
+      priceOption,
+      amount: product ? calculateAmount(product, counts, schedule.date, priceOptionId) : null,
     };
   });
   const totalAmount = selectedItems.some((item) => item.amount == null) ? null : selectedItems.reduce((sum, item) => sum + (item.amount ?? 0), 0);
@@ -176,7 +180,15 @@ export function ReservationWizard() {
       return;
     }
     setError("");
-    setSelectedScheduleIds((ids) => (ids.includes(schedule.id) ? ids.filter((id) => id !== schedule.id) : [...ids, schedule.id]));
+    const alreadySelected = selectedScheduleIds.includes(schedule.id);
+    if (!alreadySelected) {
+      const product = productById.get(schedule.productId);
+      const defaultPriceOptionId = product?.priceOptions?.[0]?.id;
+      if (defaultPriceOptionId) {
+        setPriceOptionBySchedule((current) => ({ ...current, [schedule.id]: defaultPriceOptionId }));
+      }
+    }
+    setSelectedScheduleIds((ids) => (alreadySelected ? ids.filter((id) => id !== schedule.id) : [...ids, schedule.id]));
   }
 
   function validateCurrentStep() {
@@ -228,13 +240,14 @@ export function ReservationWizard() {
       return;
     }
 
-    const items: ReservationItemInput[] = selectedItems.map(({ schedule }) => ({
+    const items: ReservationItemInput[] = selectedItems.map(({ schedule, priceOption }) => ({
       productId: schedule.productId,
       scheduleId: schedule.id,
       adultCount,
       youthCount,
       childCount: 0,
       preschoolCount,
+      priceOptionId: priceOption?.id,
     }));
 
     try {
@@ -328,36 +341,69 @@ export function ReservationWizard() {
                   const product = productById.get(schedule.productId);
                   const selected = selectedScheduleIds.includes(schedule.id);
                   const selectable = isScheduleSelectable(schedule);
-                  const amount = product ? calculateAmount(product, { adultCount, youthCount, childCount: 0, preschoolCount }, schedule.date) : null;
+                  const priceOptionId = priceOptionBySchedule[schedule.id] ?? product?.priceOptions?.[0]?.id;
+                  const amount = product
+                    ? calculateAmount(product, { adultCount, youthCount, childCount: 0, preschoolCount }, schedule.date, priceOptionId)
+                    : null;
                   const isRoom = product?.capacityType === "reservation";
                   const preschoolRestricted = preschoolCount > 0 && product?.preschoolAllowed === false;
                   return (
-                    <button
+                    <article
                       key={schedule.id}
-                      type="button"
-                      disabled={!selectable && !selected}
-                      onClick={() => toggleSchedule(schedule)}
-                      className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55 ${
+                      className={`overflow-hidden rounded-lg border transition ${
                         selected ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6] bg-white"
                       }`}
                     >
-                      <span className="flex items-start justify-between gap-3">
-                        <span>
-                          <span className="block font-bold">{product?.name ?? "체험"}</span>
-                          <span className="mt-1 block text-sm text-[#617064]">{timeText(schedule, product)}</span>
+                      <button
+                        type="button"
+                        disabled={!selectable && !selected}
+                        onClick={() => toggleSchedule(schedule)}
+                        className="w-full p-4 text-left disabled:cursor-not-allowed disabled:opacity-55"
+                      >
+                        <span className="flex items-start justify-between gap-3">
+                          <span>
+                            <span className="block font-bold">{product?.name ?? "체험"}</span>
+                            <span className="mt-1 block text-sm text-[#617064]">{timeText(schedule, product)}</span>
+                          </span>
+                          <span className={`rounded px-2 py-1 text-xs font-bold ${selected ? "bg-[#24573a] text-white" : "bg-[#f4eee0] text-[#6c4f35]"}`}>
+                            {selected ? "선택됨" : scheduleStatusLabels[schedule.status]}
+                          </span>
                         </span>
-                        <span className={`rounded px-2 py-1 text-xs font-bold ${selected ? "bg-[#24573a] text-white" : "bg-[#f4eee0] text-[#6c4f35]"}`}>
-                          {selected ? "선택됨" : scheduleStatusLabels[schedule.status]}
+                        <span className="mt-3 block text-sm text-[#617064]">
+                          {isRoom
+                            ? `객실 ${schedule.capacity}실 / 예약 ${schedule.reservedCount}실 / 남은 객실 ${remainingSeats(schedule)}실`
+                            : `정원 ${schedule.capacity}명 / 예약 ${schedule.reservedCount}명 / 잔여 ${remainingSeats(schedule)}명`}
                         </span>
-                      </span>
-                      <span className="mt-3 block text-sm text-[#617064]">
-                        {isRoom
-                          ? `객실 ${schedule.capacity}실 / 예약 ${schedule.reservedCount}실 / 남은 객실 ${remainingSeats(schedule)}실`
-                          : `정원 ${schedule.capacity}명 / 예약 ${schedule.reservedCount}명 / 잔여 ${remainingSeats(schedule)}명`}
-                      </span>
-                      {preschoolRestricted ? <span className="mt-2 block text-xs font-bold text-red-700">유치원생 참여 불가</span> : null}
-                      <span className="mt-2 block text-sm font-semibold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</span>
-                    </button>
+                        {preschoolRestricted ? <span className="mt-2 block text-xs font-bold text-red-700">유치원생 참여 불가</span> : null}
+                        <span className="mt-2 block text-sm font-semibold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</span>
+                      </button>
+                      {selected && product?.priceOptions?.length ? (
+                        <div className="border-t border-[#c9ded1] px-4 py-3">
+                          <p className="text-xs font-bold text-[#4f6256]">만들 양 선택</p>
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            {product.priceOptions.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                aria-pressed={priceOptionId === option.id}
+                                onClick={() => {
+                                  setPriceOptionBySchedule((current) => ({ ...current, [schedule.id]: option.id }));
+                                  setError("");
+                                }}
+                                className={`rounded-md border px-3 py-2 text-left text-xs ${
+                                  priceOptionId === option.id
+                                    ? "border-[#24573a] bg-white font-bold text-[#24573a]"
+                                    : "border-[#d7ccb7] bg-[#fffdf8] text-[#596258]"
+                                }`}
+                              >
+                                <span className="block">{option.label}</span>
+                                <span className="mt-1 block">{formatCurrency(option.price)} / 1인</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
                   );
                 })}
               </div>
@@ -454,10 +500,11 @@ export function ReservationWizard() {
             <dt className="text-[#6b715f]">선택 체험</dt>
             <dd className="mt-2 grid gap-2">
               {selectedItems.length === 0 ? <span className="font-bold">-</span> : null}
-              {selectedItems.map(({ schedule, product, amount }) => (
+              {selectedItems.map(({ schedule, product, priceOption, amount }) => (
                 <span key={schedule.id} className="rounded-md bg-[#f8f1e3] p-3">
                   <span className="block font-bold">{product?.name ?? "체험"}</span>
                   <span className="block text-xs text-[#617064]">{timeText(schedule, product)}</span>
+                  {priceOption ? <span className="block text-xs text-[#617064]">{priceOption.label} · {formatCurrency(priceOption.price)} / 1인</span> : null}
                   <span className="block text-xs font-bold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</span>
                 </span>
               ))}

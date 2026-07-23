@@ -14,6 +14,9 @@ export function formatCurrency(value?: number | null) {
 
 export function formatPrice(product: Product) {
   if (product.priceNote) return product.priceNote;
+  if (product.priceOptions?.length) {
+    return product.priceOptions.map((option) => `${option.label} ${formatCurrency(option.price)}`).join(" / ");
+  }
   if (product.priceType === "inquiry") {
     if (product.basePrice != null && product.maxPrice != null) {
       return `${formatCurrency(product.basePrice)}~${formatCurrency(product.maxPrice)}`;
@@ -36,8 +39,13 @@ export function calculateAmount(
   product: Product,
   counts: ReservationCounts,
   date?: string,
+  priceOptionId?: string,
 ): number | null {
   const totalPeople = counts.adultCount + counts.youthCount + counts.childCount + (counts.preschoolCount ?? 0);
+  if (product.priceOptions?.length) {
+    const option = product.priceOptions.find((item) => item.id === priceOptionId) ?? product.priceOptions[0];
+    return option.price * totalPeople;
+  }
   if (product.priceType === "inquiry") return null;
   if (product.priceType === "age_group") {
     return (

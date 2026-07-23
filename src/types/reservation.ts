@@ -26,6 +26,9 @@ export interface ReservationItem {
   preschoolCount?: number;
   totalPeople: number;
   reservedUnits?: number;
+  priceOptionId?: string;
+  priceOptionLabel?: string;
+  unitPrice?: number;
   amount: number | null;
 }
 
@@ -36,6 +39,7 @@ export interface ReservationItemInput {
   youthCount: number;
   childCount: number;
   preschoolCount?: number;
+  priceOptionId?: string;
   productName?: string;
   date?: string;
   startTime?: string;

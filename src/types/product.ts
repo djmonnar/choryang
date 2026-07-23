@@ -18,6 +18,12 @@ export interface SeasonalPrice {
   label: string;
 }
 
+export interface ProductPriceOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -31,6 +37,7 @@ export interface Product {
   basePrice?: number | null;
   maxPrice?: number | null;
   priceNote?: string;
+  priceOptions?: ProductPriceOption[];
   seasonalPrices?: SeasonalPrice[];
   availableMonths?: number[];
   excludedMonths?: number[];
