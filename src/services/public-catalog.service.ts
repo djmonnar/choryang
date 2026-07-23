@@ -1,6 +1,6 @@
 import "server-only";
 
-import { seedProducts } from "@/data/seedProducts";
+import { retiredProductIds, seedProducts } from "@/data/seedProducts";
 import { seedSchedules } from "@/data/seedSchedules";
 import { getAdminFirestore } from "@/lib/firebase/admin";
 import type { Product } from "@/types/product";
@@ -8,6 +8,7 @@ import type { Schedule } from "@/types/schedule";
 
 const PRODUCTS = "products";
 const SCHEDULES = "schedules";
+const retiredProducts = new Set<string>(retiredProductIds);
 
 function canUseDevelopmentSeed() {
   return (
@@ -24,7 +25,7 @@ export async function listPublicProducts(): Promise<Product[]> {
 
   return snapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }) as Product)
-    .filter((product) => product.visible)
+    .filter((product) => product.visible && !retiredProducts.has(product.id))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 

@@ -5,6 +5,8 @@ import { ExperienceCard } from "@/components/experience/ExperienceCard";
 import { listPublicProducts } from "@/services/catalog.service";
 import type { Product } from "@/types/product";
 
+const featuredProductIds = ["daseulgi-fish", "hangwa", "acorn-rice-cake", "gochujang"] as const;
+
 export function FeaturedExperiences() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,12 @@ export function FeaturedExperiences() {
     listPublicProducts()
       .then((data) => {
         if (!isMounted) return;
-        setProducts(data.filter((product) => product.bookingEnabled).slice(0, 4));
+        const productsById = new Map(data.map((product) => [product.id, product]));
+        setProducts(
+          featuredProductIds
+            .map((id) => productsById.get(id))
+            .filter((product): product is Product => Boolean(product?.bookingEnabled)),
+        );
       })
       .catch((caught) => {
         if (!isMounted) return;
