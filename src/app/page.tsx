@@ -27,7 +27,7 @@ export default function Home() {
           {[
             ["청정 1급수 초량강", "맑은 물가에서 자연을 온몸으로 느껴보세요."],
             ["가족·단체 체험", "어린이집, 학교, 모임 단체까지 함께하기 좋습니다."],
-            ["숙박·식사 안내", "숙박과 시골밥상은 문의 중심으로 안내드립니다."],
+            ["숙박 예약·식사 안내", "숙박은 온라인 예약, 시골밥상은 문의로 안내드립니다."],
             ["관리자 확인 후 확정", "가능 여부와 결제 확인 후 예약이 확정됩니다."],
           ].map(([title, text]) => (
             <div className="flex gap-3 border-[#e7decb] md:border-r md:pr-5 last:md:border-r-0" key={title}>
@@ -56,14 +56,14 @@ export default function Home() {
             align="left"
             eyebrow="Season"
             title="계절마다 달라지는 초량마을"
-            description="봄에는 쑥떡과 모내기, 여름에는 다슬기와 물놀이, 가을에는 도토리와 알밤처럼 계절의 리듬에 맞춘 체험을 운영합니다."
+            description="봄에는 쑥떡과 모내기, 여름에는 다슬기와 물고기잡이, 가을에는 도토리와 알밤처럼 계절의 리듬에 맞춘 체험을 운영합니다."
           />
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               ["봄", "쑥떡 만들기, 모내기, 딸기따기"],
-              ["여름", "다슬기잡이, 물고기잡이, 블루베리쨈"],
+              ["여름", "다슬기·물고기잡이, 블루베리잼"],
               ["가을", "알밤체험, 도토리묵, 벼 탈곡"],
-              ["연중", "한과, 찐빵, 샌드위치, 힐링 체험"],
+              ["연중", "한과, 찐빵, 고추장, 힐링 체험"],
             ].map(([season, text]) => (
               <div className="rounded-lg border border-[#d6e7e1] bg-white p-5 shadow-sm" key={season}>
                 <p className="text-lg font-bold text-[#24573a]">{season}</p>
@@ -94,10 +94,10 @@ export default function Home() {
       <section className="border-y border-[#e7decb] bg-white py-12 sm:py-16">
         <div className="section-shell grid gap-6 lg:grid-cols-2">
           <article className="overflow-hidden rounded-lg border border-[#e4d9c5] shadow-sm">
-            <img src={withBasePath("/images/choryang/stay-01.jpg")} alt="초량마을 숙박 안내" className="h-56 w-full object-cover" />
+            <img src={withBasePath("/images/choryang/stay-village-house.jpg")} alt="초량마을 숙박 안내" className="h-56 w-full object-cover" />
             <div className="p-6">
               <p className="text-xl font-bold">숙박 안내</p>
-              <p className="mt-2 text-sm leading-6 text-[#596258]">숙박은 별도 예약 기능 없이 문의 중심으로 안내드립니다.</p>
+              <p className="mt-2 text-sm leading-6 text-[#596258]">제비콩방, 작두콩방, 조롱박방, 다슬용방의 예약 가능한 날짜를 확인해 신청할 수 있습니다.</p>
               <Link href="/stay-food" className="mt-5 inline-flex items-center gap-2 rounded-md border border-[#24573a] px-4 py-2 text-sm font-semibold text-[#24573a]">
                 자세히 보기 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -107,7 +107,7 @@ export default function Home() {
             <img src={withBasePath("/images/choryang/food-table-01.jpg")} alt="초량마을 시골밥상" className="h-56 w-full object-cover" />
             <div className="p-6">
               <p className="text-xl font-bold">식사 안내</p>
-              <p className="mt-2 text-sm leading-6 text-[#596258]">자연밥상, 다슬기탕, 도토리묵밥 등은 문의 후 안내드립니다.</p>
+              <p className="mt-2 text-sm leading-6 text-[#596258]">자연밥상과 다슬기 수제비·탕·백숙 등은 전화 문의로 안내드립니다.</p>
               <Link href="/stay-food" className="mt-5 inline-flex items-center gap-2 rounded-md border border-[#24573a] px-4 py-2 text-sm font-semibold text-[#24573a]">
                 자세히 보기 <ArrowRight className="h-4 w-4" />
               </Link>

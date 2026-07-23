@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarCheck, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { reservationCautions, siteSettings } from "@/data/siteSettings";
-import { calculateAmount, formatCurrency } from "@/lib/utils/format";
+import {
+  calculateAmount,
+  formatCurrency,
+  getReservationCapacityUnits,
+  isProductAvailableOnDate,
+} from "@/lib/utils/format";
 import { listPublicProducts, listPublicSchedules } from "@/services/catalog.service";
 import { createReservation } from "@/services/reservations.service";
 import type { Product } from "@/types/product";
@@ -23,8 +28,15 @@ function timeKey(schedule: Schedule) {
   return `${schedule.date}-${schedule.startTime}-${schedule.endTime}`;
 }
 
-function countPeople(counts: { adultCount: number; youthCount: number; childCount: number }) {
-  return counts.adultCount + counts.youthCount + counts.childCount;
+function timeText(schedule: Schedule, product?: Product) {
+  if (product?.capacityType === "reservation") {
+    return `체크인 ${schedule.startTime} · 체크아웃 익일 ${schedule.endTime}`;
+  }
+  return `${schedule.startTime}~${schedule.endTime}`;
+}
+
+function countPeople(counts: { adultCount: number; youthCount: number; preschoolCount: number }) {
+  return counts.adultCount + counts.youthCount + counts.preschoolCount;
 }
 
 export function ReservationWizard() {
@@ -42,7 +54,7 @@ export function ReservationWizard() {
   const [loadError, setLoadError] = useState("");
   const [adultCount, setAdultCount] = useState(1);
   const [youthCount, setYouthCount] = useState(0);
-  const [childCount, setChildCount] = useState(0);
+  const [preschoolCount, setPreschoolCount] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -59,19 +71,27 @@ export function ReservationWizard() {
 
   const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const scheduleById = useMemo(() => new Map(schedules.map((schedule) => [schedule.id, schedule])), [schedules]);
-  const totalPeople = countPeople({ adultCount, youthCount, childCount });
-  const dateOptions = useMemo(() => [...new Set(schedules.map((schedule) => schedule.date))].sort(), [schedules]);
-  const schedulesForDate = schedules.filter((schedule) => schedule.date === visitDate && productById.get(schedule.productId)?.bookingEnabled);
+  const totalPeople = countPeople({ adultCount, youthCount, preschoolCount });
+  const visibleSchedules = useMemo(
+    () =>
+      schedules.filter((schedule) => {
+        const product = productById.get(schedule.productId);
+        return product?.bookingEnabled && isProductAvailableOnDate(product, schedule.date);
+      }),
+    [productById, schedules],
+  );
+  const dateOptions = useMemo(() => [...new Set(visibleSchedules.map((schedule) => schedule.date))].sort(), [visibleSchedules]);
+  const schedulesForDate = visibleSchedules.filter((schedule) => schedule.date === visitDate);
   const selectedSchedules = selectedScheduleIds.map((id) => scheduleById.get(id)).filter(Boolean) as Schedule[];
   const selectedTimeKeys = new Set(selectedSchedules.map(timeKey));
 
   const selectedItems = selectedSchedules.map((schedule) => {
     const product = productById.get(schedule.productId);
-    const counts = { adultCount, youthCount, childCount };
+    const counts = { adultCount, youthCount, childCount: 0, preschoolCount };
     return {
       schedule,
       product,
-      amount: product ? calculateAmount(product, counts) : null,
+      amount: product ? calculateAmount(product, counts, schedule.date) : null,
     };
   });
   const totalAmount = selectedItems.some((item) => item.amount == null) ? null : selectedItems.reduce((sum, item) => sum + (item.amount ?? 0), 0);
@@ -132,8 +152,12 @@ export function ReservationWizard() {
   }, []);
 
   function isScheduleSelectable(schedule: Schedule) {
+    const product = productById.get(schedule.productId);
+    if (!product) return false;
     if (schedule.status !== "open") return false;
-    if (remainingSeats(schedule) < totalPeople) return false;
+    if (!isProductAvailableOnDate(product, schedule.date)) return false;
+    if (preschoolCount > 0 && product.preschoolAllowed === false) return false;
+    if (remainingSeats(schedule) < getReservationCapacityUnits(product, totalPeople)) return false;
     if (selectedScheduleIds.includes(schedule.id)) return true;
     if (selectedTimeKeys.has(timeKey(schedule))) return false;
     return true;
@@ -141,7 +165,14 @@ export function ReservationWizard() {
 
   function toggleSchedule(schedule: Schedule) {
     if (!isScheduleSelectable(schedule)) {
-      setError(selectedTimeKeys.has(timeKey(schedule)) ? "같은 시간대 체험은 중복 선택할 수 없습니다." : "정원이 부족하거나 마감된 회차입니다.");
+      const product = productById.get(schedule.productId);
+      const message =
+        preschoolCount > 0 && product?.preschoolAllowed === false
+          ? `${product.name}은 유치원생이 참여할 수 없습니다.`
+          : selectedTimeKeys.has(timeKey(schedule))
+            ? "같은 시간대 체험은 중복 선택할 수 없습니다."
+            : "정원이 부족하거나 마감된 회차입니다.";
+      setError(message);
       return;
     }
     setError("");
@@ -155,7 +186,15 @@ export function ReservationWizard() {
     if (step === 1 && totalPeople <= 0) return "인원은 1명 이상이어야 합니다.";
     if (step === 2) {
       if (selectedScheduleIds.length === 0) return "최소 1개 이상의 체험 회차를 선택해 주세요.";
-      const invalid = selectedSchedules.find((schedule) => schedule.status !== "open" || remainingSeats(schedule) < totalPeople);
+      const restricted = selectedSchedules.find((schedule) => {
+        const product = productById.get(schedule.productId);
+        return preschoolCount > 0 && product?.preschoolAllowed === false;
+      });
+      if (restricted) return `${productById.get(restricted.productId)?.name ?? "선택한 프로그램"}은 유치원생이 참여할 수 없습니다.`;
+      const invalid = selectedSchedules.find((schedule) => {
+        const product = productById.get(schedule.productId);
+        return !product || schedule.status !== "open" || remainingSeats(schedule) < getReservationCapacityUnits(product, totalPeople);
+      });
       if (invalid) return "선택한 체험 중 정원이 부족하거나 마감된 회차가 있습니다.";
       if (new Set(selectedSchedules.map(timeKey)).size !== selectedSchedules.length) return "같은 시간대 체험은 중복 선택할 수 없습니다.";
     }
@@ -194,7 +233,8 @@ export function ReservationWizard() {
       scheduleId: schedule.id,
       adultCount,
       youthCount,
-      childCount,
+      childCount: 0,
+      preschoolCount,
     }));
 
     try {
@@ -239,7 +279,7 @@ export function ReservationWizard() {
               {schedulesLoading ? <p className="mt-4 rounded-lg bg-[#f8f1e3] p-4 text-sm font-semibold text-[#5f675a]">체험 일정을 불러오는 중입니다.</p> : null}
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {dateOptions.map((date) => {
-                  const availableCount = schedules.filter((schedule) => schedule.date === date && schedule.status === "open").length;
+                  const availableCount = visibleSchedules.filter((schedule) => schedule.date === date && schedule.status === "open").length;
                   return (
                     <button
                       key={date}
@@ -262,8 +302,8 @@ export function ReservationWizard() {
               <h2 className="text-xl font-bold">인원 입력</h2>
               {[
                 ["성인", adultCount, setAdultCount],
-                ["중고등학생", youthCount, setYouthCount],
-                ["유치원/초등학생", childCount, setChildCount],
+                ["청소년", youthCount, setYouthCount],
+                ["유치원생", preschoolCount, setPreschoolCount],
               ].map(([label, value, setter]) => (
                 <label key={label as string} className="grid gap-2 rounded-lg border border-[#e2d8c6] p-4 sm:grid-cols-[1fr_180px] sm:items-center">
                   <span className="font-bold">{label as string}</span>
@@ -288,7 +328,9 @@ export function ReservationWizard() {
                   const product = productById.get(schedule.productId);
                   const selected = selectedScheduleIds.includes(schedule.id);
                   const selectable = isScheduleSelectable(schedule);
-                  const amount = product ? calculateAmount(product, { adultCount, youthCount, childCount }) : null;
+                  const amount = product ? calculateAmount(product, { adultCount, youthCount, childCount: 0, preschoolCount }, schedule.date) : null;
+                  const isRoom = product?.capacityType === "reservation";
+                  const preschoolRestricted = preschoolCount > 0 && product?.preschoolAllowed === false;
                   return (
                     <button
                       key={schedule.id}
@@ -302,15 +344,18 @@ export function ReservationWizard() {
                       <span className="flex items-start justify-between gap-3">
                         <span>
                           <span className="block font-bold">{product?.name ?? "체험"}</span>
-                          <span className="mt-1 block text-sm text-[#617064]">{schedule.startTime}~{schedule.endTime}</span>
+                          <span className="mt-1 block text-sm text-[#617064]">{timeText(schedule, product)}</span>
                         </span>
                         <span className={`rounded px-2 py-1 text-xs font-bold ${selected ? "bg-[#24573a] text-white" : "bg-[#f4eee0] text-[#6c4f35]"}`}>
                           {selected ? "선택됨" : scheduleStatusLabels[schedule.status]}
                         </span>
                       </span>
                       <span className="mt-3 block text-sm text-[#617064]">
-                        정원 {schedule.capacity}명 / 예약 {schedule.reservedCount}명 / 잔여 {remainingSeats(schedule)}명
+                        {isRoom
+                          ? `객실 ${schedule.capacity}실 / 예약 ${schedule.reservedCount}실 / 남은 객실 ${remainingSeats(schedule)}실`
+                          : `정원 ${schedule.capacity}명 / 예약 ${schedule.reservedCount}명 / 잔여 ${remainingSeats(schedule)}명`}
                       </span>
+                      {preschoolRestricted ? <span className="mt-2 block text-xs font-bold text-red-700">유치원생 참여 불가</span> : null}
                       <span className="mt-2 block text-sm font-semibold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</span>
                     </button>
                   );
@@ -412,7 +457,7 @@ export function ReservationWizard() {
               {selectedItems.map(({ schedule, product, amount }) => (
                 <span key={schedule.id} className="rounded-md bg-[#f8f1e3] p-3">
                   <span className="block font-bold">{product?.name ?? "체험"}</span>
-                  <span className="block text-xs text-[#617064]">{schedule.startTime}~{schedule.endTime}</span>
+                  <span className="block text-xs text-[#617064]">{timeText(schedule, product)}</span>
                   <span className="block text-xs font-bold text-[#24573a]">{amount == null ? "문의 후 안내" : formatCurrency(amount)}</span>
                 </span>
               ))}
@@ -420,7 +465,7 @@ export function ReservationWizard() {
           </div>
           <div>
             <dt className="text-[#6b715f]">총 예상금액</dt>
-            <dd className="font-bold text-[#24573a]">{totalAmount == null ? "문의 후 안내" : formatCurrency(totalAmount)}</dd>
+            <dd className="font-bold text-[#24573a]">{selectedItems.length === 0 ? "-" : totalAmount == null ? "문의 후 안내" : formatCurrency(totalAmount)}</dd>
           </div>
         </dl>
       </aside>

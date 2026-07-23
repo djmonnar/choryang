@@ -14,7 +14,9 @@ export function getReservationItems(reservation: Reservation): ReservationItem[]
       adultCount: reservation.adultCount,
       youthCount: reservation.youthCount,
       childCount: reservation.childCount,
+      preschoolCount: reservation.preschoolCount ?? 0,
       totalPeople: reservation.totalPeople,
+      reservedUnits: reservation.totalPeople,
       amount: reservation.totalAmount,
     },
   ];

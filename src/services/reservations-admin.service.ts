@@ -4,7 +4,12 @@ import type { Transaction } from "firebase-admin/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { seedProducts } from "@/data/seedProducts";
 import { getAdminFirestore } from "@/lib/firebase/admin";
-import { calculateAmount, makeReservationNumber } from "@/lib/utils/format";
+import {
+  calculateAmount,
+  getReservationCapacityUnits,
+  isProductAvailableOnDate,
+  makeReservationNumber,
+} from "@/lib/utils/format";
 import { getReservationItems } from "@/lib/utils/reservationItems";
 import type { Product } from "@/types/product";
 import type { Reservation, ReservationInput, ReservationItem, ReservationItemInput, ReservationStatus } from "@/types/reservation";
@@ -38,6 +43,7 @@ function getInputItems(input: ReservationInput): ReservationItemInput[] {
       adultCount: input.adultCount ?? 0,
       youthCount: input.youthCount ?? 0,
       childCount: input.childCount ?? 0,
+      preschoolCount: input.preschoolCount ?? 0,
     },
   ];
 }
@@ -71,7 +77,7 @@ async function restoreCapacityInTransaction(transaction: Transaction, reservatio
     if (!scheduleSnapshot.exists) continue;
 
     const schedule = scheduleSnapshot.data() as Schedule;
-    transaction.set(scheduleRef, restoreCapacityUpdate(schedule, item.totalPeople), { merge: true });
+    transaction.set(scheduleRef, restoreCapacityUpdate(schedule, item.reservedUnits ?? item.totalPeople), { merge: true });
     restored = true;
   }
   return restored;
@@ -141,14 +147,24 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
       const product = productSnapshot.exists ? (productSnapshot.data() as Product) : await getProductForReservation(inputItem.productId);
       if (!product) throw new Error("선택한 체험을 찾을 수 없습니다.");
       if (!scheduleSnapshot.exists) throw new Error("선택한 회차를 찾을 수 없습니다.");
+      if (!product.visible || !product.bookingEnabled) throw new Error(`${product.name}은 현재 예약을 받을 수 없습니다.`);
 
       const schedule = scheduleSnapshot.data() as Schedule;
       if (schedule.productId !== product.id) throw new Error("체험과 회차 정보가 일치하지 않습니다.");
       if (schedule.status !== "open") throw new Error(`${product.name} 회차는 예약 가능한 상태가 아닙니다.`);
+      if (!isProductAvailableOnDate(product, schedule.date)) throw new Error(`${product.name}은 선택한 달에 운영하지 않습니다.`);
 
-      const totalPeople = inputItem.adultCount + inputItem.youthCount + inputItem.childCount;
+      const preschoolCount = inputItem.preschoolCount ?? 0;
+      const totalPeople = inputItem.adultCount + inputItem.youthCount + inputItem.childCount + preschoolCount;
       if (totalPeople <= 0) throw new Error("인원은 1명 이상이어야 합니다.");
-      if (schedule.reservedCount + totalPeople > schedule.capacity) throw new Error(`${product.name} 회차의 남은 정원을 초과했습니다.`);
+      if (preschoolCount > 0 && product.preschoolAllowed === false) {
+        throw new Error(`${product.name}은 유치원생이 참여할 수 없습니다.`);
+      }
+      if (product.minPeople && totalPeople < product.minPeople) throw new Error(`${product.name}은 최소 ${product.minPeople}명부터 예약할 수 있습니다.`);
+      if (product.maxPeople && totalPeople > product.maxPeople) throw new Error(`${product.name}은 최대 ${product.maxPeople}명까지 예약할 수 있습니다.`);
+
+      const reservedUnits = getReservationCapacityUnits(product, totalPeople);
+      if (schedule.reservedCount + reservedUnits > schedule.capacity) throw new Error(`${product.name} 회차의 남은 정원을 초과했습니다.`);
 
       const item: ReservationItem = {
         productId: product.id,
@@ -160,8 +176,10 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
         adultCount: inputItem.adultCount,
         youthCount: inputItem.youthCount,
         childCount: inputItem.childCount,
+        preschoolCount,
         totalPeople,
-        amount: calculateAmount(product, inputItem),
+        reservedUnits,
+        amount: calculateAmount(product, { ...inputItem, preschoolCount }, schedule.date),
       };
       items.push(item);
       scheduleUpdates.push({ ref: scheduleRef, schedule, item });
@@ -193,6 +211,7 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
       adultCount: firstItem.adultCount,
       youthCount: firstItem.youthCount,
       childCount: firstItem.childCount,
+      preschoolCount: firstItem.preschoolCount ?? 0,
       totalPeople,
       totalAmount,
       paymentMethod: input.paymentMethod,
@@ -214,7 +233,7 @@ export async function createReservationAdmin(input: ReservationInput, userId?: s
     };
 
     for (const { ref, schedule, item } of scheduleUpdates) {
-      const nextReservedCount = schedule.reservedCount + item.totalPeople;
+      const nextReservedCount = schedule.reservedCount + (item.reservedUnits ?? item.totalPeople);
       transaction.update(ref, {
         reservedCount: nextReservedCount,
         status: nextReservedCount >= schedule.capacity ? "full" : schedule.status,

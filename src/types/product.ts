@@ -10,6 +10,13 @@ export type ProductCategory =
 export type Season = "spring" | "summer" | "autumn" | "winter" | "all" | "unknown";
 
 export type PriceType = "per_person" | "age_group" | "fixed" | "inquiry";
+export type CapacityType = "people" | "reservation";
+
+export interface SeasonalPrice {
+  months: number[];
+  basePrice: number;
+  label: string;
+}
 
 export interface Product {
   id: string;
@@ -20,7 +27,17 @@ export interface Product {
   adultPrice?: number | null;
   youthPrice?: number | null;
   childPrice?: number | null;
+  preschoolPrice?: number | null;
   basePrice?: number | null;
+  maxPrice?: number | null;
+  priceNote?: string;
+  seasonalPrices?: SeasonalPrice[];
+  availableMonths?: number[];
+  excludedMonths?: number[];
+  preschoolAllowed?: boolean;
+  capacityType?: CapacityType;
+  includedPeople?: number | null;
+  extraPersonPrice?: number | null;
   minPeople?: number | null;
   maxPeople?: number | null;
   durationMinutes?: number | null;

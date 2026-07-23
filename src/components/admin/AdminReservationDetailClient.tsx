@@ -101,7 +101,7 @@ export function AdminReservationDetailClient() {
               <div>
                 <dt className="text-[#6b715f]">인원</dt>
                 <dd className="font-bold">
-                  성인 {reservation.adultCount}, 중고등 {reservation.youthCount}, 유초등 {reservation.childCount}
+                  성인 {reservation.adultCount}, 청소년 {reservation.youthCount + reservation.childCount}, 유치원 {reservation.preschoolCount ?? 0}
                 </dd>
               </div>
               <div>
@@ -122,7 +122,7 @@ export function AdminReservationDetailClient() {
                   <div key={`${item.scheduleId}-${item.startTime}`} className="rounded-md bg-white p-3 text-sm">
                     <p className="font-bold">{item.productName}</p>
                     <p className="mt-1 text-[#5d665e]">
-                      {formatReservationItemTime(item)} · 성인 {item.adultCount}, 중고등 {item.youthCount}, 유초등 {item.childCount} ·{" "}
+                      {formatReservationItemTime(item)} · 성인 {item.adultCount}, 청소년 {item.youthCount + item.childCount}, 유치원 {item.preschoolCount ?? 0} ·{" "}
                       {item.amount == null ? "문의 후 안내" : formatCurrency(item.amount)}
                     </p>
                   </div>

@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { seedNotices } from "../src/data/seedNotices";
-import { seedProducts } from "../src/data/seedProducts";
+import { retiredProductIds, seedProducts } from "../src/data/seedProducts";
 import { seedSchedules } from "../src/data/seedSchedules";
 import { siteSettings } from "../src/data/siteSettings";
 
@@ -41,6 +41,28 @@ async function seedCollection<T extends { id: string }>(collectionName: string, 
   console.log(`Seeded ${items.length} documents into ${collectionName}`);
 }
 
+async function seedSchedulesSafely() {
+  const db = getFirestore(initializeAdmin());
+  const refs = seedSchedules.map((schedule) => db.collection("schedules").doc(schedule.id));
+  const existing = await db.getAll(...refs);
+  const batch = db.batch();
+  seedSchedules.forEach((schedule, index) => {
+    batch.set(
+      refs[index],
+      existing[index]?.exists
+        ? {
+            ...schedule,
+            reservedCount: existing[index]?.get("reservedCount") ?? schedule.reservedCount,
+            status: existing[index]?.get("status") ?? schedule.status,
+          }
+        : schedule,
+      { merge: true },
+    );
+  });
+  await batch.commit();
+  console.log(`Seeded ${seedSchedules.length} documents into schedules without resetting reservations`);
+}
+
 async function main() {
   const missing = requiredEnv.filter((key) => !process.env[key]);
   if (missing.length > 0) {
@@ -49,7 +71,21 @@ async function main() {
   }
 
   await seedCollection("products", seedProducts);
-  await seedCollection("schedules", seedSchedules);
+  await Promise.all(
+    retiredProductIds.map((id) =>
+      getFirestore(initializeAdmin()).collection("products").doc(id).set(
+        {
+          visible: false,
+          bookingEnabled: false,
+          updatedAt: new Date().toISOString(),
+          retiredAt: new Date().toISOString(),
+        },
+        { merge: true },
+      ),
+    ),
+  );
+  console.log(`Retired ${retiredProductIds.length} removed products`);
+  await seedSchedulesSafely();
   await seedCollection("notices", seedNotices);
   await getFirestore(initializeAdmin()).collection("siteSettings").doc("default").set(siteSettings, { merge: true });
   console.log("Seeded siteSettings/default");

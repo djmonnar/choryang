@@ -1,15 +1,15 @@
 # choryang
 
-경남 사천시 곤명면 초량길 27-3에 있는 **다슬기초량마을**의 체험 예약 홈페이지와 관리자 예약관리 시스템 MVP입니다.
+경남 사천시 곤명면 초량길 27-3에 있는 **다슬기초량마을**의 체험·숙박 예약 홈페이지와 관리자 예약관리 시스템입니다.
 
 ## 기술 스택
 
-- Next.js App Router
-- TypeScript
+- Next.js 16 App Router, React 19, TypeScript
 - Tailwind CSS v4
-- Firebase Authentication / Firestore / Storage 연결 준비
-- Mock repository 기반 예약/관리자 기능
-- MockPaymentProvider + PortOne/TossPayments adapter placeholder
+- Firebase Admin SDK + Firestore
+- 네이버 로그인, httpOnly 고객 세션
+- ADMIN_SECRET 기반 httpOnly 관리자 세션
+- TossPayments 결제 준비·승인·웹훅 Route Handler
 
 ## 실행 방법
 
@@ -20,82 +20,90 @@ npm run dev
 
 브라우저에서 `http://localhost:3000`을 엽니다.
 
-빌드 확인:
-
 ```bash
-npm run build
 npm run lint
+npm run build
 ```
 
-## 환경변수 예시
+## 환경변수
 
-`.env.example`을 복사해 `.env.local`로 사용합니다.
+전체 예시는 `.env.example`을 확인합니다. 서버 필수값은 브라우저에 노출되지 않는 이름으로 설정합니다.
 
 ```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
 
-NEXT_PUBLIC_PAYMENT_PROVIDER=mock
-PORTONE_STORE_ID=
-PORTONE_CHANNEL_KEY=
-TOSS_CLIENT_KEY=
-TOSS_SECRET_KEY=
+NAVER_CLIENT_ID=
+NAVER_CLIENT_SECRET=
+NAVER_CALLBACK_URL=http://localhost:3000/api/auth/naver/callback
+AUTH_SESSION_SECRET=
 
-NEXT_PUBLIC_USE_MOCK_AUTH=true
+ADMIN_SECRET=
+ADMIN_EMAIL=
+ADMIN_PASSWORD_HASH=
 ```
 
-## Firebase 연결 방법
+`FIREBASE_PRIVATE_KEY`는 큰따옴표로 감싼 `\n` 이스케이프 형식도 지원합니다.
 
-1. Firebase 콘솔에서 Web App을 생성합니다.
-2. Authentication에서 Email/Password provider를 켭니다.
-3. Firestore Database와 Storage를 생성합니다.
-4. `.env.local`에 Firebase Web SDK 설정값을 입력합니다.
-5. `src/lib/firebase/client.ts`의 `getFirebaseServices()`를 사용해 Auth, Firestore, Storage를 가져옵니다.
-6. 실제 운영 전에는 `src/services/firestore-reservations.repository.ts`의 transaction 구조를 기준으로 `products`, `schedules`, `reservations`, `payments`, `notices`, `siteSettings`, `adminLogs` repository를 확장합니다.
+## Firebase 연결과 Seed
 
-## 관리자 로그인 테스트
+1. Firebase 서비스 계정에서 `project_id`, `client_email`, `private_key`를 확인합니다.
+2. 로컬은 `.env.local`, Vercel은 Project Settings의 Environment Variables에 등록합니다.
+3. Firestore Database를 Native mode로 생성합니다.
+4. 아래 명령으로 기본 상품·일정·공지·사이트 설정을 입력합니다.
 
-개발용 mock auth가 켜져 있으면 아래 계정으로 로그인할 수 있습니다.
+```bash
+npm run seed:firestore
+```
+
+관리자 로그인 후 `/admin/products`의 **고객 요청 최신 자료 반영** 버튼으로도 Vercel 서버에서 같은 작업을 실행할 수 있습니다. 반복 실행해도 기존 회차의 예약 인원과 마감 상태는 초기화하지 않습니다.
+
+주요 컬렉션:
+
+- `users`
+- `products`
+- `schedules`
+- `reservations`
+- `payments`
+- `notices`
+- `siteSettings`
+- `adminLogs`
+
+브라우저가 Firestore를 직접 읽고 쓰지 않으며, 중요한 작업은 Route Handler와 Admin SDK에서 처리합니다. Firestore Rules는 deny all로 운영할 수 있습니다.
+
+## 예약 구조
+
+- 성인 / 청소년 / 유치원생 인원을 구분합니다.
+- 여러 체험과 숙박을 예약번호 하나로 신청할 수 있습니다.
+- 체험은 인원 단위, 숙박은 객실 1실 단위로 정원을 차감합니다.
+- 예약 생성과 모든 회차의 정원 증가는 Firestore transaction으로 처리합니다.
+- 취소 시 각 회차 정원을 transaction으로 복구하며 중복 복구를 막습니다.
+- 개발 환경에 Firebase Admin 값이 없으면 공개 상품·일정 화면만 seed 데이터로 미리 볼 수 있습니다.
+
+## 관리자 로그인
 
 - URL: `/admin/login`
-- 이메일: `admin@choryang.local`
-- 비밀번호: `choryang1234`
+- `ADMIN_SECRET` 비밀키 로그인 또는 `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` 로그인을 사용합니다.
+- `ADMIN_PASSWORD_HASH`는 비밀번호의 SHA-256 16진수 값입니다.
+- 관리자 API는 서버의 httpOnly admin session cookie가 없으면 `401`을 반환합니다.
 
-실제 Firebase Auth를 사용할 때는 `NEXT_PUBLIC_USE_MOCK_AUTH=false`로 바꾸고 Firebase 로그인 구현을 연결하면 됩니다.
+## 결제
 
-## Seed 데이터
+TossPayments용 아래 API가 준비되어 있습니다.
 
-- 상품: `src/data/seedProducts.ts`
-- 일정: `src/data/seedSchedules.ts`
-- 공지: `src/data/seedNotices.ts`
-- 사이트 설정: `src/data/siteSettings.ts`
+- `POST /api/payments/toss/prepare`
+- `POST /api/payments/toss/confirm`
+- `POST /api/payments/toss/webhook`
 
-초기 상품은 PRD의 33개 상품을 모두 포함합니다. 가격 미확정 상품은 `priceType: "inquiry"`로 두어 고객 화면에서 “문의 후 안내”로 표시합니다.
-
-## PG 연동 다음 단계
-
-1. `src/lib/payment/providers.ts`의 `PortOnePaymentProvider` 또는 `TossPaymentProvider`를 실제 SDK/API 호출로 교체합니다.
-2. 서버 라우트 또는 Cloud Functions에서 결제 검증 webhook을 받습니다.
-3. 결제 성공 시 `payments.status=paid`, `reservations.status=paid` 또는 `confirmed`로 갱신합니다.
-4. 환불 요청/취소는 관리자 승인 흐름과 PG cancel API를 연결합니다.
-
-## 아직 mock인 부분
-
-- 예약, 상품, 일정, 공지, 결제, 설정 저장은 브라우저 `localStorage` mock입니다.
-- Firebase Auth 로그인은 개발용 mock 계정입니다.
-- 지도는 placeholder입니다. Naver/Kakao 지도 API로 교체해야 합니다.
-- PG 결제는 MockPaymentProvider입니다.
-- 계좌번호와 환불 규정은 placeholder입니다.
-- `public/images` 이미지는 교체 가능한 임시 이미지입니다. 실제 마을 사진으로 교체하세요.
+운영 전 TossPayments 계약·키 등록, 성공/실패 URL 확인, 웹훅 시크릿 검증과 실제 결제 시나리오 테스트가 필요합니다. 결제 금액은 클라이언트가 보낸 값을 믿지 않고 예약 문서의 `totalAmount`를 기준으로 검증합니다.
 
 ## 운영 전 확인 사항
 
-- Firebase 보안 규칙과 관리자 권한 custom claims
-- Firestore transaction 기반 정원 초과 방지
-- 개인정보처리방침, 환불 규정, 계좌 정보 확정
-- 결제 webhook 검증과 관리자 입금 확인 프로세스
-- 실제 사진, 지도 API, 접근성/모바일 QA
+- 가격 범위 상품의 최종 금액 선택 방식
+- 유치원 참여 가능 여부가 미확정인 일부 체험
+- 숙박 기준 인원 초과 시 20,000원의 정확한 부과 단위
+- 결제 선행 또는 관리자 확인 후 결제 중 최종 운영 흐름
+- 객실별 대표 내부 사진
+- 환불 규정과 사업자 정보
+- 관리자 공지·사이트 설정의 Firestore 편집 전환

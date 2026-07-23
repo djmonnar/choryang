@@ -28,7 +28,10 @@ export default async function ExperienceDetailPage({ params }: { params: Promise
           <p className="mt-4 leading-8 text-[#586259]">{product.description}</p>
           <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
             <div><dt className="text-[#6d735f]">가격</dt><dd className="mt-1 font-bold text-[#24573a]">{formatPrice(product)}</dd></div>
-            <div><dt className="text-[#6d735f]">대상</dt><dd className="mt-1 font-bold">가족, 어린이집, 학교, 단체</dd></div>
+            <div>
+              <dt className="text-[#6d735f]">대상</dt>
+              <dd className="mt-1 font-bold">{product.preschoolAllowed === false ? "성인, 청소년" : "성인, 청소년, 유치원생"}</dd>
+            </div>
             <div><dt className="text-[#6d735f]">소요시간</dt><dd className="mt-1 font-bold">{product.durationMinutes ?? 90}분</dd></div>
             <div><dt className="text-[#6d735f]">운영계절</dt><dd className="mt-1 font-bold">{seasonLabels[product.season]}</dd></div>
           </dl>

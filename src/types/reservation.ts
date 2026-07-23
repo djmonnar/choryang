@@ -23,7 +23,9 @@ export interface ReservationItem {
   adultCount: number;
   youthCount: number;
   childCount: number;
+  preschoolCount?: number;
   totalPeople: number;
+  reservedUnits?: number;
   amount: number | null;
 }
 
@@ -33,6 +35,7 @@ export interface ReservationItemInput {
   adultCount: number;
   youthCount: number;
   childCount: number;
+  preschoolCount?: number;
   productName?: string;
   date?: string;
   startTime?: string;
@@ -58,6 +61,7 @@ export interface Reservation {
   adultCount: number;
   youthCount: number;
   childCount: number;
+  preschoolCount?: number;
   totalPeople: number;
   totalAmount: number | null;
   paymentMethod: PaymentMethod;
@@ -92,6 +96,7 @@ export interface ReservationInput {
   adultCount?: number;
   youthCount?: number;
   childCount?: number;
+  preschoolCount?: number;
   paymentMethod: PaymentMethod;
   depositorName?: string;
   refundBankName?: string;
