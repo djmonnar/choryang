@@ -393,7 +393,7 @@ export function ReservationWizard() {
               <h2 className="text-xl font-bold">결제 및 환불 정보</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  ["bank_transfer", "계좌입금", `${siteSettings.bankName} ${siteSettings.bankAccount} (${siteSettings.bankHolder})`],
+                  ["bank_transfer", "계좌입금", "사무장님이 예약 가능 여부를 확인한 뒤 입금 계좌를 안내합니다."],
                   ["online", "온라인결제", "관리자 결제 요청 후 내 예약/예약조회에서 결제할 수 있습니다."],
                 ].map(([value, title, text]) => (
                   <button key={value} type="button" onClick={() => setPaymentMethod(value as PaymentMethod)} className={`rounded-lg border p-5 text-left ${paymentMethod === value ? "border-[#24573a] bg-[#edf7f1]" : "border-[#e2d8c6]"}`}>

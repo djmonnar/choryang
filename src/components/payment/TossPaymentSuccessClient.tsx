@@ -29,7 +29,7 @@ export function TossPaymentSuccessClient() {
     confirmTossPayment(params)
       .then(() => {
         setStatus("success");
-        setMessage("결제가 완료되었습니다. 예약 상태가 결제완료로 변경되었습니다.");
+        setMessage("결제가 완료되어 예약이 최종 확정되었습니다. 내 예약에서 확정 상태를 확인해 주세요.");
       })
       .catch((error) => {
         setStatus("error");

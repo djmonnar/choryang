@@ -125,7 +125,7 @@ export async function prepareTossPayment(input: TossPrepareInput) {
   await assertCanAccessReservation(reservation, input);
   assertPayableReservation(reservation);
 
-  const orderId = makeOrderId(reservation.reservationNumber);
+  const orderId = reservation.paymentRequestId ?? makeOrderId(reservation.reservationNumber);
   const amount = reservation.totalAmount as number;
   const orderName = `${reservation.productName} 체험 예약`;
   const requestedAt = new Date().toISOString();
@@ -246,7 +246,8 @@ async function applySuccessfulPayment(input: TossConfirmInput, rawResponse: Reco
       transaction.set(
         reservationRef,
         {
-          status: "paid",
+          status: "confirmed",
+          confirmedAt: now,
           updatedAt: now,
           paymentKey: input.paymentKey,
           updatedAtServer: FieldValue.serverTimestamp(),
@@ -264,6 +265,18 @@ export async function confirmTossPayment(input: TossConfirmInput) {
   const payment = paymentSnapshot.data() as Payment;
   if (payment.amount !== input.amount) throw new Error("결제 금액이 예약 금액과 일치하지 않습니다.");
   if (payment.status === "paid" && payment.paymentKey === input.paymentKey) {
+    const reservation = await readReservation(payment.reservationId);
+    if (reservation.status === "paid") {
+      await getAdminFirestore().collection(RESERVATIONS).doc(reservation.id).set(
+        {
+          status: "confirmed",
+          confirmedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          updatedAtServer: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
     return { payment };
   }
 

@@ -88,7 +88,7 @@ export default function Home() {
             );
           })}
         </div>
-        <p className="mt-5 text-center text-sm text-[#6d6351]">현재 결제 방식: 계좌입금 / 추후 PG 온라인결제 연동 예정</p>
+        <p className="mt-5 text-center text-sm text-[#6d6351]">사무장님이 예약 가능 여부를 확인한 뒤 계좌입금 또는 온라인결제를 안내합니다.</p>
       </section>
 
       <section className="border-y border-[#e7decb] bg-white py-12 sm:py-16">

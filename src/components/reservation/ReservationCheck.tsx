@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TossPaymentButton } from "@/components/payment/TossPaymentButton";
+import { PaymentProgressNotice } from "@/components/payment/PaymentProgressNotice";
 import { ReservationCancelButton } from "@/components/reservation/ReservationCancelButton";
 import { findReservation } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
@@ -59,6 +60,7 @@ export function ReservationCheck() {
                 </div>
               ))}
             </div>
+            <PaymentProgressNotice reservation={result} />
             <ReservationCancelButton reservation={result} phone={phone} onCancelled={setResult} />
             <TossPaymentButton reservation={result} phone={phone} />
           </>

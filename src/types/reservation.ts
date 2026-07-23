@@ -66,6 +66,9 @@ export interface Reservation {
   totalAmount: number | null;
   paymentMethod: PaymentMethod;
   status: ReservationStatus;
+  paymentRequestId?: string;
+  paymentRequestedAt?: string;
+  confirmedAt?: string;
   depositorName?: string;
   refundBankName?: string;
   refundAccountNumber?: string;

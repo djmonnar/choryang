@@ -1,52 +1,56 @@
-import { getPaymentProvider } from "@/lib/payment/providers";
-import { updateReservationStatus } from "@/services/reservations.service";
 import type { Payment } from "@/types/payment";
 import type { Reservation } from "@/types/reservation";
-import { readStorage, writeStorage } from "./storage";
 
-const KEY = "choryang.payments";
+interface PaymentApiResponse {
+  payment?: Payment;
+  payments?: Payment[];
+  reservation?: Reservation;
+  error?: string;
+}
 
-export function listPayments() {
-  return readStorage<Payment[]>(KEY, []).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+async function parsePaymentResponse(response: Response) {
+  const data = (await response.json().catch(() => ({}))) as PaymentApiResponse;
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      if (typeof window !== "undefined") window.location.href = "/admin/login";
+    }
+    throw new Error(data.error || "결제 처리 중 오류가 발생했습니다.");
+  }
+  return data;
+}
+
+export async function listPayments() {
+  const data = await parsePaymentResponse(
+    await fetch("/api/admin/payments", {
+      credentials: "include",
+      cache: "no-store",
+    }),
+  );
+  return data.payments ?? [];
 }
 
 export async function createPaymentRequest(reservation: Reservation) {
-  const provider = getPaymentProvider((process.env.NEXT_PUBLIC_PAYMENT_PROVIDER as "mock") ?? "mock");
-  const result = await provider.requestPayment({
-    reservationId: reservation.id,
-    reservationNumber: reservation.reservationNumber,
-    amount: reservation.totalAmount ?? 0,
-    customerName: reservation.customerName,
-    phone: reservation.phone,
-  });
-  const payment: Payment = {
-    id: result.paymentId,
-    reservationId: reservation.id,
-    method: reservation.paymentMethod,
-    provider: result.provider,
-    amount: reservation.totalAmount ?? 0,
-    status: reservation.paymentMethod === "bank_transfer" ? "bank_waiting" : "requested",
-    requestedAt: new Date().toISOString(),
-    paidAt: null,
-    cancelledAt: null,
-    transactionId: null,
-    virtualAccountInfo: reservation.paymentMethod === "bank_transfer" ? "관리자 설정 계좌로 입금 확인" : null,
-    memo: "MockPaymentProvider로 생성된 결제 요청입니다.",
-  };
-  writeStorage(KEY, [payment, ...listPayments()]);
-  await updateReservationStatus(reservation.id, reservation.paymentMethod === "bank_transfer" ? "bank_waiting" : "payment_requested");
-  return payment;
+  const data = await parsePaymentResponse(
+    await fetch("/api/admin/payments/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ reservationId: reservation.id }),
+    }),
+  );
+  if (!data.payment || !data.reservation) throw new Error("결제 요청 결과를 확인할 수 없습니다.");
+  return { payment: data.payment, reservation: data.reservation };
 }
 
 export async function markPaymentPaid(paymentId: string) {
-  const payments = listPayments();
-  const target = payments.find((payment) => payment.id === paymentId);
-  if (!target) throw new Error("결제 정보를 찾을 수 없습니다.");
-  const updated: Payment = { ...target, status: "paid", paidAt: new Date().toISOString() };
-  writeStorage(
-    KEY,
-    payments.map((payment) => (payment.id === paymentId ? updated : payment)),
+  const data = await parsePaymentResponse(
+    await fetch(`/api/admin/payments/${encodeURIComponent(paymentId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ action: "confirm_bank" }),
+    }),
   );
-  await updateReservationStatus(target.reservationId, "paid");
-  return updated;
+  if (!data.payment || !data.reservation) throw new Error("입금 확인 결과를 확인할 수 없습니다.");
+  return { payment: data.payment, reservation: data.reservation };
 }

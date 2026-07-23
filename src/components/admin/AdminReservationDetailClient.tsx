@@ -1,11 +1,11 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { ProtectedRoute } from "@/components/admin/auth";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { createPaymentRequest } from "@/services/payments.service";
+import { createPaymentRequest, markPaymentPaid } from "@/services/payments.service";
 import { getReservation, updateReservationStatus } from "@/services/reservations.service";
 import { formatCurrency } from "@/lib/utils/format";
 import { formatReservationItemTime, getReservationItems, getReservationTitle } from "@/lib/utils/reservationItems";
@@ -24,7 +24,6 @@ const statusButtons: ReservationStatus[] = [
 ];
 
 export function AdminReservationDetailClient() {
-  const router = useRouter();
   const params = useParams<{ id?: string }>();
   const searchParams = useSearchParams();
   const [memo, setMemo] = useState("");
@@ -61,9 +60,48 @@ export function AdminReservationDetailClient() {
   }
 
   async function requestPayment() {
-    const payment = await createPaymentRequest(reservation!);
-    setMessage(`결제 요청이 생성되었습니다: ${payment.id}`);
-    router.refresh();
+    try {
+      const result = await createPaymentRequest(reservation!);
+      setReservation(result.reservation);
+      setMessage(
+        result.reservation.paymentMethod === "online"
+          ? "온라인결제를 요청했습니다. 고객이 결제하면 예약이 자동 확정됩니다."
+          : "입금 계좌를 안내했습니다. 입금 확인 후 아래 버튼을 눌러 주세요.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "결제 요청 중 오류가 발생했습니다.");
+    }
+  }
+
+  async function changeStatus(status: ReservationStatus) {
+    if (status === "cancelled" && !window.confirm("예약취소로 변경하시겠습니까? 정원이 복구되지 않은 예약이면 회차 정원이 복구됩니다.")) return;
+    try {
+      const updated = await updateReservationStatus(reservation!.id, status, memo);
+      setReservation(updated);
+      setMessage(
+        status === "cancelled"
+          ? `${reservationStatusLabels[status]} 상태로 변경했습니다. 정원 복구 여부: ${updated.capacityRestored ? "복구됨" : "미복구"}`
+          : `${reservationStatusLabels[status]} 상태로 변경했습니다.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "상태 변경 중 오류가 발생했습니다.");
+    }
+  }
+
+  async function confirmBankPayment() {
+    if (!reservation?.paymentRequestId) {
+      setMessage("결제 요청 기록을 찾을 수 없습니다. 결제 관리 화면에서 확인해 주세요.");
+      return;
+    }
+    if (!window.confirm("실제 입금 내역을 확인하셨나요? 확인하면 예약이 최종 확정됩니다.")) return;
+
+    try {
+      const result = await markPaymentPaid(reservation.paymentRequestId);
+      setReservation(result.reservation);
+      setMessage("입금을 확인하고 예약을 최종 확정했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "입금 확인 중 오류가 발생했습니다.");
+    }
   }
 
   return (
@@ -180,7 +218,8 @@ export function AdminReservationDetailClient() {
             </div>
           </section>
           <aside className="rounded-lg border border-[#e4d9c5] bg-white p-5 shadow-sm">
-            <h2 className="font-bold">상태 변경</h2>
+            <h2 className="font-bold">다음 처리</h2>
+            <p className="mt-2 text-sm leading-6 text-[#687166]">현재 상태에 맞는 큰 버튼을 순서대로 눌러 주세요.</p>
             <textarea
               value={memo}
               onChange={(event) => setMemo(event.target.value)}
@@ -188,33 +227,59 @@ export function AdminReservationDetailClient() {
               className="mt-3 min-h-24 w-full rounded-md border border-[#d6cab5] px-3 py-2"
             />
             <div className="mt-3 grid gap-2">
-              {statusButtons.map((status) => (
+              {reservation.status === "submitted" ? (
                 <button
-                  key={status}
                   type="button"
-                  onClick={async () => {
-                    if (status === "cancelled" && !window.confirm("예약취소로 변경하시겠습니까? 정원이 복구되지 않은 예약이면 회차 정원이 복구됩니다.")) return;
-                    const updated = await updateReservationStatus(reservation.id, status, memo);
-                    setReservation(updated);
-                    setMessage(
-                      status === "cancelled"
-                        ? `${reservationStatusLabels[status]} 상태로 변경했습니다. 정원 복구 여부: ${updated.capacityRestored ? "복구됨" : "미복구"}`
-                        : `${reservationStatusLabels[status]} 상태로 변경했습니다.`,
-                    );
-                  }}
-                  className="rounded-md border border-[#d7ccb7] px-3 py-2 text-sm font-bold hover:bg-[#f8f1e3]"
+                  onClick={() => changeStatus("checking")}
+                  className="rounded-md bg-[#24573a] px-3 py-3 text-sm font-bold text-white"
                 >
-                  {reservationStatusLabels[status]}
+                  1. 예약 가능 여부 확인 시작
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={requestPayment}
-                className="rounded-md bg-[#24573a] px-3 py-2 text-sm font-bold text-white"
-              >
-                결제요청 생성
-              </button>
+              ) : null}
+              {reservation.status === "checking" ? (
+                <button type="button" onClick={requestPayment} className="rounded-md bg-[#24573a] px-3 py-3 text-sm font-bold text-white">
+                  2. {reservation.paymentMethod === "online" ? "온라인결제 요청" : "입금 계좌 안내"}
+                </button>
+              ) : null}
+              {reservation.status === "payment_requested" ? (
+                <p className="rounded-md bg-[#eef7f5] px-3 py-3 text-sm font-semibold leading-6 text-[#315e61]">고객의 온라인결제를 기다리고 있습니다. 결제가 끝나면 자동으로 예약확정됩니다.</p>
+              ) : null}
+              {reservation.status === "bank_waiting" ? (
+                <button type="button" onClick={confirmBankPayment} className="rounded-md bg-[#24573a] px-3 py-3 text-sm font-bold text-white">
+                  3. 입금 확인 · 예약 확정
+                </button>
+              ) : null}
+              {reservation.status === "paid" ? (
+                <button type="button" onClick={() => changeStatus("confirmed")} className="rounded-md bg-[#24573a] px-3 py-3 text-sm font-bold text-white">
+                  3. 예약 최종 확정
+                </button>
+              ) : null}
+              {reservation.status === "confirmed" ? (
+                <button type="button" onClick={() => changeStatus("completed")} className="rounded-md bg-[#24573a] px-3 py-3 text-sm font-bold text-white">
+                  체험 완료 처리
+                </button>
+              ) : null}
+              {reservation.status === "refund_requested" ? (
+                <button type="button" onClick={() => changeStatus("refunded")} className="rounded-md bg-purple-700 px-3 py-3 text-sm font-bold text-white">
+                  환불 완료 처리
+                </button>
+              ) : null}
             </div>
+            <details className="mt-4 border-t border-[#e6dcc9] pt-4">
+              <summary className="cursor-pointer text-sm font-bold text-[#5d665e]">상태 직접 수정</summary>
+              <div className="mt-3 grid gap-2">
+                {statusButtons.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => changeStatus(status)}
+                    className="rounded-md border border-[#d7ccb7] px-3 py-2 text-sm font-bold hover:bg-[#f8f1e3]"
+                  >
+                    {reservationStatusLabels[status]}
+                  </button>
+                ))}
+              </div>
+            </details>
             {message ? <p className="mt-3 text-sm font-semibold text-[#24573a]">{message}</p> : null}
           </aside>
         </div>
